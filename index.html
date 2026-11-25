@@ -31,6 +31,12 @@ header,section{display:grid;gap:12px}
 .btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .note{font-size:.85rem;color:var(--muted);border-left:3px solid var(--amber);padding-left:10px}
 .soon{border-style:dashed;background:transparent}
+.wins{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.win{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;display:grid;gap:6px;align-content:start}
+.win h3{font-size:1.2rem}
+.win p{font-size:.92rem;color:var(--muted)}
+.role{font:600 1rem var(--body)}
+
 </style>
 </head>
 <body>
@@ -38,15 +44,33 @@ header,section{display:grid;gap:12px}
 <header>
   <span class="eyebrow">Portfolio</span>
   <h1>Finance & ERP Automation</h1>
+  <span class="role">Renee C. · Financial Controller</span>
   <p>I automate accounting work in construction and materials: accounts payable, ERP imports, API integrations and month-end reconciliations. Each project below has a write-up, sample data and code you can run.</p>
   <ul class="skills">
-    <li>Accounts payable</li><li>ERP imports</li><li>REST APIs</li><li>Python</li><li>Reconciliations</li><li>Internal controls</li>
+    <li>SQL</li><li>Excel</li><li>Vista (Viewpoint)</li><li>REST APIs</li><li>Python</li><li>Claude / AI workflows</li><li>Month-end close</li><li>Internal controls</li>
   </ul>
-  <p class="note">Every company, vendor and figure in these projects is fictional. They are modeled on real kinds of work, with invented data and mock systems.</p>
 </header>
 
 <section>
+  <h2>About</h2>
+  <p>I'm a Financial Controller who automates the work accounting teams do by hand. In construction materials that means scale tickets, vendor invoices, accruals and intercompany. I build SQL queries, ERP imports, API integrations and AI-assisted workflows that cut keying, catch errors before they post, and tie out to the cent.</p>
+</section>
+
+<section>
+  <h2>What I've automated</h2>
+  <div class="wins">
+    <div class="win"><h3>Material accrual reconciliation</h3><p>Automated the month-end rec of the AP accrued clearing account, netting scale-ticket accruals against vendor invoices. It traced a systematic under-accrual to supplier price increases, quantified the variance and produced the correcting entry.</p></div>
+    <div class="win"><h3>ERP import automation</h3><p>Turned the monthly shop-parts charge to equipment into a clean Vista import with built-in tie-outs and an error troubleshooting guide, replacing manual line entry.</p></div>
+    <div class="win"><h3>Intercompany reconciliation</h3><p>Automated AR-to-AP matching between sister companies, with one-sided items surfaced and a bridge that ties to zero.</p></div>
+    <div class="win"><h3>Billing and delivery reporting</h3><p>Built automated ticket billing summaries and weekly delivery rollups by day, customer and material, with voided and rejected tickets handled separately.</p></div>
+    <div class="win"><h3>Commission tracking</h3><p>Automated the commission log from ticket data, with an audit that catches missing and orphaned invoices.</p></div>
+    <div class="win"><h3>AI-assisted close</h3><p>Turned recurring close tasks into reusable Claude workflows, so the same steps and checks run the same way every month.</p></div>
+  </div>
+</section>
+
+<section>
   <h2>Projects</h2>
+  <p class="note">Projects use fictional companies, vendors and figures, modeled on real kinds of work with invented data and mock systems.</p>
   <article class="card">
     <span class="eyebrow">AP automation · API integration</span>
     <h3>Scale tickets to ERP, without keying</h3>

@@ -4,6 +4,12 @@ Projects that show how I automate accounting work in a construction and material
 
 > **All companies, vendors, people and figures in this repository are fictional.** Each project is modeled on the kind of work I do, but uses invented data and mock systems. No employer data is included.
 
+## About
+
+I'm a Financial Controller who automates the work accounting teams do by hand: SQL queries, ERP imports (Vista), API integrations and AI-assisted (Claude) workflows that cut keying, catch errors before they post, and tie out to the cent.
+
+**Live portfolio:** https://reneec1988.github.io/Renee-C/
+
 ## Projects
 
 | Project | What it shows | Tools |

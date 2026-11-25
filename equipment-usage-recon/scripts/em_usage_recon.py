@@ -1,15 +1,18 @@
 """
 Copperhollow Paving & Grading -- equipment usage reconciliation (FICTIONAL DATA ONLY)
 
-Compares what the telematics devices say each machine did (engine hours and the
-job-site geofence it worked in) with the equipment usage that was posted to jobs
-from crew timecards, then:
+Equipment usage is posted with payroll: foremen enter equipment hours on the crew
+timecard, and the payroll ledger update posts them to EM (revenue for the owning
+company) and JC (equipment cost on the job). Usage is billed on ACTUAL hours used.
+
+This script compares what the telematics devices say each machine did (engine
+hours and the job-site geofence it worked in) with the usage payroll posted, then:
 
   1. classifies every unit-day and every posted usage line exactly once
   2. proposes the correcting EM usage lines (reversal + repost) for each fixable item
   3. holds judgment calls for the superintendent with the dollars at stake
-  4. writes an EM Usage import file, a review queue, the GL effect by company
-     (including intercompany) and a tie-out that must pass
+  4. writes an EM Usage import file, a review queue, a labor reclass list for
+     payroll, the GL effect by company (intercompany both ways) and a tie-out
 
 Run:  python em_usage_recon.py            (writes to ../data and ../output)
 Every company, job, unit, person and dollar amount here is invented.
@@ -26,12 +29,11 @@ DATA.mkdir(exist_ok=True); OUT.mkdir(exist_ok=True)
 
 MONTH = date(2026, 10, 1)
 MONTH_END = date(2026, 10, 31)
-HOURS_TOLERANCE = 1.0        # posted vs engine hours per unit-day before it goes to review [GUESS]
+HOURS_TOLERANCE = 1.0        # posted vs engine hours per unit-day before it is corrected to actual [GUESS]
 MIN_UNPOSTED_HOURS = 1.0     # engine hours on a job site with no usage posted -> propose usage
 RATE_CHANGE = date(2026, 10, 16)
 
 COMPANIES = {1: "Copperhollow Materials Co.", 2: "Copperhollow Paving & Grading"}
-JC_CO = 2                    # all jobs belong to the paving company
 
 # Revenue code 1 = hourly operating rate. Rates by category, with effective dates.
 # category -> (description, [(effective date, $/hr)], job phase)
@@ -62,27 +64,29 @@ _units("K", "TKT", 2, 451)
 _units("S", "SKD", 4, 501, no_tel=("S-504",))
 _units("X", "EXC", 2, 551)
 _units("T", "DTK", 8, 601, no_tel=("T-607", "T-608"))
-_units("L", "LDR", 2, 901, co=1)              # owned by the materials company, loaned to jobs
+_units("L", "LDR", 2, 901, co=1)              # owned by the materials company; also loaned to paving jobs
+PAVING_ONLY = ("PAV", "ROL", "MIL", "TKT")       # never work at the plant
 
-JOBS = {
-    "26-1104": dict(desc="Hwy 9 Mill & Overlay",           geofence="GF-1104"),
-    "26-1112": dict(desc="Cedar Ridge Subdivision Ph 2",   geofence="GF-1112"),
-    "26-1118": dict(desc="County Rd 41 Widening",          geofence="GF-1118"),
-    "26-1125": dict(desc="Riverside Commons Parking Lot",  geofence="GF-1125"),
-    "26-1131": dict(desc="Airport Taxiway C Rehab",        geofence="GF-1131"),
+JOBS = {   # jc_co: the company that owns the job (and whose payroll the crew is on) [GUESS]
+    "26-1104": dict(jc_co=2, desc="Hwy 9 Mill & Overlay",           geofence="GF-1104"),
+    "26-1112": dict(jc_co=2, desc="Cedar Ridge Subdivision Ph 2",   geofence="GF-1112"),
+    "26-1118": dict(jc_co=2, desc="County Rd 41 Widening",          geofence="GF-1118"),
+    "26-1125": dict(jc_co=2, desc="Riverside Commons Parking Lot",  geofence="GF-1125"),
+    "26-1131": dict(jc_co=2, desc="Airport Taxiway C Rehab",        geofence="GF-1131"),
+    "26-9010": dict(jc_co=1, desc="Plant 1 Stockpile & Yard Work",  geofence="GF-PLANT1"),
 }
+PAVING_JOBS = [j for j, v in JOBS.items() if v["jc_co"] == 2]
 GEOFENCES = {j["geofence"]: job for job, j in JOBS.items()}
 GEOFENCES["GF-YARD"] = None                    # equipment yard, not a job
-GEOFENCES["GF-PLANT1"] = None                  # asphalt plant 1 (materials company)
 
-# Fictional GL accounts
-GL = {
-    (2, "rev"): ("4610.", "Equipment Revenue - Internal"),
-    (2, "jc"):  ("5410.", "Job Cost - Equipment"),
-    (2, "ic"):  ("2450.", "Due to Copperhollow Materials Co."),
-    (1, "rev"): ("4615.", "Equipment Revenue - Intercompany"),
-    (1, "ic"):  ("1450.", "Due from Copperhollow Paving & Grading"),
-}
+# Fictional GL accounts (same chart in both companies)
+SHORT = {1: "Copperhollow Materials", 2: "Copperhollow Paving"}
+def gl(co, kind, other=None):
+    return {"jc":     ("5410.", "Job Cost - Equipment"),
+            "rev":    ("4610.", "Equipment Revenue - Internal"),
+            "icrev":  ("4615.", "Equipment Revenue - Intercompany"),
+            "duefrom": ("1450.", f"Due from {SHORT.get(other, '')}"),
+            "dueto":  ("2450.", f"Due to {SHORT.get(other, '')}")}[kind]
 
 
 def money(x): return round(x + 1e-9, 2)
@@ -110,18 +114,21 @@ def generate():
     days = list(workdays())
     tel, usage = [], []
     meter = {u: random.randint(1800, 9400) + random.random() for u in FLEET}
-    job_list = list(JOBS)
+    job_list = list(PAVING_JOBS)
 
     for u, f in FLEET.items():
         # equipment moves between jobs in stretches of a few days
-        cur, left = random.choice(job_list), 0
+        pool = (PAVING_JOBS if f["category"] in PAVING_ONLY
+                else ["26-9010"] * 4 + PAVING_JOBS if f["em_co"] == 1
+                else PAVING_JOBS + ["26-9010"] if f["category"] in ("DTK", "SKD") else PAVING_JOBS)
+        cur, left = random.choice(pool), 0
         for d in days:
             if left <= 0:
-                cur = random.choice(job_list + [None]) if random.random() < 0.85 else None
+                cur = random.choice(pool + [None]) if random.random() < 0.85 else None
                 left = random.randint(2, 6)
             left -= 1
             if cur is None:
-                site, hrs = ("GF-PLANT1" if f["em_co"] == 1 else "GF-YARD"), round(random.uniform(0, 1.2), 1)
+                site, hrs = "GF-YARD", round(random.uniform(0, 1.2), 1)
             else:
                 site, hrs = JOBS[cur]["geofence"], round(min(11.0, max(2.5, random.gauss(7.4, 1.3))), 1)
             start = meter[u]; meter[u] += hrs
@@ -140,13 +147,20 @@ def generate():
     def on_job(u):  # posted lines for unit u that sit on a telematics job day
         return [x for x in usage if x["unit"] == u and (u, x["date"]) in tel_by]
 
-    # 1) Milling machine ran 3 days on Hwy 9 but the timecards never carried it
+    # 1) Milling machine ran 3 days but the crew's timecards never carried it
     drop = [x for x in usage if x["unit"] == "M-402"][3:6]
     # plus scattered missed units (crew forgot to add the machine to the timecard)
     for u in ("R-306", "T-603", "S-502", "X-552", "L-902"):
         drop.append(random.choice(on_job(u)))
+    # intercompany both ways: a materials-company loader on a paving job, and a
+    # paving-company truck and skid steer hauling at the plant, all left off timecards
+    ic1 = [x for x in on_job("L-901") if JOBS[x["job"]]["jc_co"] == 2]
+    ic2 = [x for x in usage if FLEET[x["unit"]]["em_co"] == 2 and FLEET[x["unit"]]["telematics"]
+           and x["job"] == "26-9010" and x["unit"] not in ("S-502", "T-603")]
+    drop += ic1[len(ic1) // 2: len(ic1) // 2 + 2] + ic2[:2]
+    labor_only = []                    # operator still on the timecard, equipment column blank
     for x in drop:
-        if x in usage: usage.remove(x)
+        if x in usage: usage.remove(x); labor_only.append(x)
 
     # 2) Rate table changed 10/16 for pavers and rollers, but Foreman 23's
     #    timecard template still carried the old rates through 10/23
@@ -159,46 +173,77 @@ def generate():
     for u, n in (("R-305", 3), ("X-551", 2), ("T-602", 1)):
         c = on_job(u)
         for x in c[len(c) // 2: len(c) // 2 + n]:
-            others = [j for j in JOBS if j != x["job"]]
+            others = [j for j in PAVING_JOBS if j != x["job"]]
             x["job"] = others[n % len(others)]
             x["foreman"] = "Foreman 18"
+
+    plant = [x for x in on_job("T-606") if x["job"] == "26-9010"]
+    for x in plant[:2]:
+        x["job"], x["foreman"] = "26-1118", "Foreman 12"
 
     # 4) Same timecard line keyed twice
     for u in ("P-202", "T-605", "S-501"):
         c = on_job(u); x = c[len(c) // 2]
         usage.append(dict(x))
 
-    # 5) Hours that don't square with the engine (judgment call -> review)
+    # 5) Hours on the timecard far above the machine's actual hours (shift hours keyed)
     for u, h in (("P-204", 10.0), ("R-302", 9.5), ("T-601", 10.0), ("X-552", 11.0), ("K-452", 9.0)):
         cand = [x for x in on_job(u) if tel_by[(u, x["date"])]["engine_hours"] < 6.0] or on_job(u)
         cand[0]["hours"] = h
 
     # 6) Usage posted on a day the machine never left the yard
-    for u in ("S-503", "R-308", "T-604"):
+    yard_units = [u for u in ("S-503", "R-308", "T-604", "R-307", "T-606", "S-502")
+                  if any(t["unit"] == u and GEOFENCES[t["geofence"]] is None for t in tel)][:3]
+    for u in yard_units:
         yard = [t for t in tel if t["unit"] == u and GEOFENCES[t["geofence"]] is None]
-        t = yard[2]
+        t = yard[len(yard) // 2]
         usage.append(dict(unit=u, date=t["date"], job=random.choice(job_list), hours=8.0,
                           rate=rate_for(u, date.fromisoformat(t["date"])),
                           source="PR timecard", foreman="Foreman 31"))
 
-    # Number the posted lines the way the ERP would (batch + seq) and price them
+    # ---- payroll timecards: one line per operator per day; the equipment columns
+    #      are what the payroll ledger update posts to EM and JC
+    operator = {u: f"E{1100 + i}" for i, u in enumerate(FLEET)}
+    def week_end(iso):
+        d = date.fromisoformat(iso); return d + timedelta(days=(4 - d.weekday()))
+    timecards = []
+    lo_ids = {id(x) for x in labor_only}
+    for x in sorted(usage + labor_only, key=lambda x: (x["date"], x["unit"])):
+        co = JOBS[x["job"]]["jc_co"]
+        has_eq = id(x) not in lo_ids
+        lab = x["hours"] if x["hours"] >= 9.0 else half(x["hours"] + random.uniform(0.2, 1.4))
+        tc = dict(tc_line=f"TC-{len(timecards) + 1:05d}", pr_co=co, pr_batch=f"PR{co}-{week_end(x['date']):%m%d}",
+                  pr_end_date=week_end(x["date"]).isoformat(), employee=operator[x["unit"]], date=x["date"],
+                  job=x["job"], phase=CATEGORIES[FLEET[x["unit"]]["category"]][2], labor_hours=lab,
+                  equipment=x["unit"] if has_eq else "", equip_hours=x["hours"] if has_eq else 0.0,
+                  equip_rate=x["rate"] if has_eq else 0.0, foreman=x["foreman"])
+        timecards.append(tc)
+        if has_eq: x["tc"] = tc
+
+    # Number the posted lines the way the ERP would and price them
     usage.sort(key=lambda x: (x["date"], x["unit"]))
     for i, x in enumerate(usage, start=1):
-        f = FLEET[x["unit"]]
-        x.update(em_co=f["em_co"], batch_seq=i, trans=f"EM-{70000 + i}",
+        f = FLEET[x["unit"]]; tc = x.pop("tc")
+        x.update(em_co=f["em_co"], jc_co=JOBS[x["job"]]["jc_co"], batch_seq=i, trans=f"EM-{70000 + i}",
                  phase=CATEGORIES[f["category"]][2], cost_type=COST_TYPE, rev_code=REV_CODE,
-                 amount=money(x["hours"] * x["rate"]))
-    return tel, usage
+                 amount=money(x["hours"] * x["rate"]), source="PR ledger update",
+                 pr_batch=tc["pr_batch"], tc_line=tc["tc_line"], employee=tc["employee"], labor_hours=tc["labor_hours"])
+    return tel, usage, timecards
 
 
 # --------------------------------------------------------------------------- reconcile
-def reconcile(tel, usage):
+def reconcile(tel, usage, timecards):
     tel_by = {(t["unit"], t["date"]): t for t in tel}
     lines_by = defaultdict(list)
     for x in usage: lines_by[(x["unit"], x["date"])].append(x)
 
     findings, status = [], {}          # status: trans -> category for every posted line
     tel_status = {}                    # (unit,date) -> category for every telematics day
+    labor_reclass = []                 # operator hours payroll charged to the wrong job
+    blank_tc = {(t["employee"], t["date"]): t for t in timecards if not t["equipment"]}
+    operator = {}
+    for t in timecards:
+        if t["equipment"]: operator[t["equipment"]] = t["employee"]
     fid = 0
 
     def add(cat, unit, d, action, lines=(), corr=(), **kw):
@@ -217,6 +262,7 @@ def reconcile(tel, usage):
     def post(unit, d, job, hours, why):
         r = rate_for(unit, date.fromisoformat(d))
         return dict(unit=unit, date=d, job=job, hours=hours, rate=r, amount=money(hours * r), memo=why)
+    def jc(job): return JOBS[job]["jc_co"]
 
     for key in sorted(set(tel_by) | set(lines_by)):
         unit, d = key
@@ -229,7 +275,9 @@ def reconcile(tel, usage):
             k = (l["job"], l["hours"], l["rate"])
             if k in seen:
                 add("DUPLICATE", unit, d, "auto", [l], [rev(l, "duplicate of " + seen[k]["trans"])],
-                    detail=f"Same {l['hours']} hrs on {l['job']} already posted as {seen[k]['trans']}")
+                    detail=f"Same {l['hours']} hrs on {l['job']} already posted as {seen[k]['trans']}. "
+                           f"Timecard {l['tc_line']} for {l['employee']} was keyed twice, so payroll should check the labor hours too",
+                    payroll=f"Duplicate timecard {l['tc_line']} ({l['employee']}, {l['labor_hours']} labor hrs)")
                 lines.remove(l)
             else:
                 seen[k] = l
@@ -244,9 +292,12 @@ def reconcile(tel, usage):
         if not lines:
             if tel_job and eng >= MIN_UNPOSTED_HOURS:
                 hrs = half(eng)
-                add("UNPOSTED", unit, d, "approve", [], [post(unit, d, tel_job, hrs, "Usage not on timecard (telematics)")],
-                    detail=f"{eng} engine hrs in {t['geofence']} ({tel_job}); nothing posted",
-                    tel_hours=eng, posted_hours=0.0)
+                tc = blank_tc.get((operator.get(unit), d))
+                note = (f" Operator {tc['employee']} is on timecard {tc['tc_line']} ({tc['pr_batch']}) for {tc['job']}, "
+                        f"{tc['labor_hours']} hrs, with the equipment column blank.") if tc else ""
+                add("UNPOSTED", unit, d, "approve", [], [post(unit, d, tel_job, hrs, "Actual hours, not on timecard")],
+                    detail=f"{eng} engine hrs in {t['geofence']} ({tel_job}); no usage posted by payroll.{note}",
+                    tel_hours=eng, posted_hours=0.0, payroll=f"{tc['tc_line']} equipment column blank" if tc else "")
                 tel_status[key] = "UNPOSTED"
             else:
                 tel_status[key] = "IDLE_NO_USAGE"
@@ -261,10 +312,12 @@ def reconcile(tel, usage):
             tel_status[key] = "NO_ACTIVITY"; continue
 
         if abs(posted_hrs - eng) > HOURS_TOLERANCE:
-            f = add("HOURS_VARIANCE", unit, d, "review", lines, [],
-                    detail=f"{posted_hrs} hrs posted vs {eng} engine hrs (idle {t['idle_pct']}%)",
-                    tel_hours=eng, posted_hours=posted_hrs)
-            f["at_stake"] = money((half(eng) - posted_hrs) * rate_for(unit, date.fromisoformat(d)))
+            corr = [rev(l, "not actual hours") for l in lines] + [post(unit, d, tel_job, half(eng), f"Actual hours used ({eng} engine hrs)")]
+            l0 = lines[0]
+            add("HOURS_VARIANCE", unit, d, "approve", lines, corr,
+                detail=f"{posted_hrs} hrs posted vs {eng} actual engine hrs. Timecard {l0['tc_line']} shows "
+                       f"{l0['labor_hours']} labor hrs for {l0['employee']}: shift hours were keyed as machine hours",
+                tel_hours=eng, posted_hours=posted_hrs, payroll=f"{l0['tc_line']} equipment hrs = shift hrs")
             tel_status[key] = "HOURS_VARIANCE"; continue
 
         if any(l["job"] != tel_job for l in lines):
@@ -272,9 +325,16 @@ def reconcile(tel, usage):
             for l in lines:
                 corr += [rev(l, f"machine was on {tel_job}"),
                          post(unit, d, tel_job, l["hours"], f"Moved from {l['job']} per geofence")]
+            for l in lines:
+                labor_reclass.append(dict(employee=l["employee"], date=d, tc_line=l["tc_line"], pr_batch=l["pr_batch"],
+                                          labor_hours=l["labor_hours"], from_job=l["job"], to_job=tel_job,
+                                          from_co=jc(l["job"]), to_co=jc(tel_job),
+                                          cross_company="Y" if jc(l["job"]) != jc(tel_job) else "N",
+                                          reason=f"Operated {unit} on {tel_job} per telematics"))
             add("WRONG_JOB", unit, d, "approve", lines, corr,
-                detail=f"Posted to {lines[0]['job']}; telematics puts the unit in {t['geofence']} ({tel_job})",
-                tel_hours=eng, posted_hours=posted_hrs)
+                detail=f"Payroll posted it to {lines[0]['job']} (the crew's job); telematics puts the unit in "
+                       f"{t['geofence']} ({tel_job}). Operator {lines[0]['employee']}'s labor is listed for a JC labor reclass",
+                tel_hours=eng, posted_hours=posted_hrs, payroll=f"Labor reclass {lines[0]['tc_line']}")
             tel_status[key] = "WRONG_JOB"; continue
 
         bad_rate = [l for l in lines if abs(l["rate"] - rate_for(unit, date.fromisoformat(d))) > 0.004]
@@ -287,7 +347,7 @@ def reconcile(tel, usage):
                 tel_hours=eng, posted_hours=posted_hrs)
         for l in lines: status.setdefault(l["trans"], "MATCHED")
         tel_status[key] = "MATCHED" if not bad_rate else "RATE"
-    return findings, status, tel_status
+    return findings, status, tel_status, labor_reclass
 
 
 # --------------------------------------------------------------------------- export
@@ -299,11 +359,12 @@ def write_csv(path, rows, header=True, fields=None):
         for r in rows: w.writerow([r[k] for k in fields] if isinstance(r, dict) else r)
 
 
-def export(tel, usage, findings, status, tel_status):
+def export(tel, usage, timecards, findings, status, tel_status, labor_reclass):
     write_csv(DATA / "telematics_daily_oct2026.csv", tel)
+    write_csv(DATA / "pr_timecards_oct2026.csv", timecards)
     write_csv(DATA / "em_usage_posted_oct2026.csv", usage,
-              fields=["trans", "batch_seq", "em_co", "unit", "date", "job", "phase", "cost_type",
-                      "rev_code", "hours", "rate", "amount", "source", "foreman"])
+              fields=["trans", "batch_seq", "em_co", "unit", "date", "jc_co", "job", "phase", "cost_type",
+                      "rev_code", "hours", "rate", "amount", "source", "pr_batch", "tc_line", "employee"])
     write_csv(DATA / "equipment_master.csv",
               [dict(unit=u, em_co=f["em_co"], category=f["category"],
                     description=CATEGORIES[f["category"]][0], telematics="Y" if f["telematics"] else "N")
@@ -311,7 +372,7 @@ def export(tel, usage, findings, status, tel_status):
     write_csv(DATA / "revenue_rates.csv",
               [dict(category=c, description=v[0], rev_code=REV_CODE, effective=mdy(eff), rate=r, um="HRS")
                for c, v in CATEGORIES.items() for eff, r in v[1]])
-    write_csv(DATA / "jobs.csv", [dict(jc_co=JC_CO, job=j, description=v["desc"], geofence=v["geofence"])
+    write_csv(DATA / "jobs.csv", [dict(jc_co=v["jc_co"], job=j, description=v["desc"], geofence=v["geofence"])
                                   for j, v in JOBS.items()])
 
     # ---- EM Usage import (corrections only), one batch per owning EM company
@@ -323,10 +384,11 @@ def export(tel, usage, findings, status, tel_status):
             co = FLEET[c["unit"]]["em_co"]; seq[co] += 1
             cat = FLEET[c["unit"]]["category"]
             rows.append(dict(Co=co, Mth=mdy(MONTH), BatchSeq=seq[co], Equipment=c["unit"], RevCode=REV_CODE,
-                             ActualDate=mdy(date.fromisoformat(c["date"])), JCCo=JC_CO, Job=c["job"],
+                             ActualDate=mdy(date.fromisoformat(c["date"])), JCCo=JOBS[c["job"]]["jc_co"], Job=c["job"],
                              Phase=CATEGORIES[cat][2], JCCostType=COST_TYPE, WorkUM="HRS",
                              TimeUnits=f"{c['hours']:.2f}", Rate=f"{c['rate']:.2f}", Dollars=f"{c['amount']:.2f}",
                              Description=f"{f['id']} {f['category']}: {c['memo']}"[:60]))
+    rows.sort(key=lambda r: (r["Co"], r["BatchSeq"]))
     write_csv(OUT / "EM_Usage_Import_Oct2026.csv", rows)
 
     write_csv(OUT / "review_queue_oct2026.csv",
@@ -337,35 +399,48 @@ def export(tel, usage, findings, status, tel_status):
     write_csv(OUT / "findings_oct2026.csv",
               [dict(id=f["id"], category=f["category"], action=f["action"], unit=f["unit"], date=f["date"],
                     posted_lines=" ".join(f["lines"]), net_amount=f["net_amount"],
-                    at_stake=f.get("at_stake", ""), detail=f["detail"]) for f in findings])
+                    at_stake=f.get("at_stake", ""), payroll=f.get("payroll", ""), detail=f["detail"]) for f in findings])
+    write_csv(OUT / "labor_reclass_for_payroll_oct2026.csv", labor_reclass)
 
     # ---- GL effect by company (what the ERP books when the correction batch posts)
-    posted_by_co = defaultdict(float); corr_by_co = defaultdict(float)
+    posted_by_co = defaultdict(float)
     for x in usage: posted_by_co[x["em_co"]] += x["amount"]
-    for r in rows: corr_by_co[int(r["Co"])] += float(r["Dollars"])
-    def je(co_amounts):
-        e = []
-        own, ic = co_amounts.get(2, 0.0), co_amounts.get(1, 0.0)
-        e.append(dict(co=2, acct=GL[(2, "jc")][0], desc=GL[(2, "jc")][1], debit=money(own + ic)))
-        e.append(dict(co=2, acct=GL[(2, "rev")][0], desc=GL[(2, "rev")][1], credit=money(own)))
-        e.append(dict(co=2, acct=GL[(2, "ic")][0], desc=GL[(2, "ic")][1], credit=money(ic)))
-        e.append(dict(co=1, acct=GL[(1, "ic")][0], desc=GL[(1, "ic")][1], debit=money(ic)))
-        e.append(dict(co=1, acct=GL[(1, "rev")][0], desc=GL[(1, "rev")][1], credit=money(ic)))
-        return e
-    correcting_entry = je(corr_by_co)
+    flows = defaultdict(float)                      # (em_co, jc_co) -> net dollars
+    for r in rows: flows[(int(r["Co"]), int(r["JCCo"]))] += float(r["Dollars"])
+    lines = defaultdict(float)                      # (co, acct, desc) -> debit(+)/credit(-)
+    for (em_co, jc_co), amt in flows.items():
+        lines[(jc_co, *gl(jc_co, "jc"))] += amt
+        if em_co == jc_co:
+            lines[(em_co, *gl(em_co, "rev"))] -= amt
+        else:
+            lines[(jc_co, *gl(jc_co, "dueto", em_co))] -= amt
+            lines[(em_co, *gl(em_co, "duefrom", jc_co))] += amt
+            lines[(em_co, *gl(em_co, "icrev"))] -= amt
+    correcting_entry = []
+    for (co, acct, desc), v in sorted(lines.items(), key=lambda kv: (kv[0][0] != 2, kv[0][1])):
+        v = money(v)
+        if v == 0: continue
+        correcting_entry.append(dict(co=co, acct=acct, desc=desc, **({"debit": v} if v > 0 else {"credit": -v})))
+    def bal(co, acct):
+        return money(sum(e.get("debit", 0) - e.get("credit", 0) for e in correcting_entry if e["co"] == co and e["acct"] == acct))
+    intercompany = dict(
+        materials_units_on_paving_jobs=money(flows.get((1, 2), 0.0)),
+        paving_units_on_materials_jobs=money(flows.get((2, 1), 0.0)),
+        due_from_paving_on_materials_books=bal(1, "1450."), due_to_materials_on_paving_books=-bal(2, "2450."),
+        due_from_materials_on_paving_books=bal(2, "1450."), due_to_paving_on_materials_books=-bal(1, "2450."))
+    posted_ic = defaultdict(float)
+    for x in usage:
+        if x["em_co"] != x["jc_co"]: posted_ic[f"Co {x['em_co']} units on Co {x['jc_co']} jobs"] += x["amount"]
 
     # ---- bridge
-    cats = ["UNPOSTED", "WRONG_JOB", "RATE", "DUPLICATE"]
+    cats = ["UNPOSTED", "HOURS_VARIANCE", "WRONG_JOB", "RATE", "DUPLICATE"]
     by_cat = {c: dict(count=sum(1 for f in findings if f["category"] == c),
                       net=money(sum(f["net_amount"] for f in findings if f["category"] == c))) for c in cats}
-    held_cat = {c: dict(count=sum(1 for f in held if f["category"] == c),
-                        at_stake=money(sum(f["at_stake"] for f in held if f["category"] == c)))
-                for c in ("HOURS_VARIANCE", "NO_ACTIVITY")}
+    held_cat = {"NO_ACTIVITY": dict(count=len(held), at_stake=money(sum(f["at_stake"] for f in held)))}
     posted_total = money(sum(posted_by_co.values()))
     corr_total = money(sum(float(r["Dollars"]) for r in rows))
     corrected = money(posted_total + corr_total)
 
-    # job-level before/after
     job_before, job_after = defaultdict(float), defaultdict(float)
     for x in usage: job_before[x["job"]] += x["amount"]; job_after[x["job"]] += x["amount"]
     for r in rows: job_after[r["Job"]] += float(r["Dollars"])
@@ -373,9 +448,17 @@ def export(tel, usage, findings, status, tel_status):
     tel_job_hours = sum(t["engine_hours"] for t in tel if GEOFENCES[t["geofence"]])
     posted_tel_hours = sum(x["hours"] for x in usage if FLEET[x["unit"]]["telematics"])
 
+    # ---- payroll side: PR timecard equipment columns -> EM usage (ledger update)
+    tc_eq = [t for t in timecards if t["equipment"]]
+    pr_hours, pr_dollars = sum(t["equip_hours"] for t in tc_eq), money(sum(t["equip_hours"] * t["equip_rate"] for t in tc_eq))
+    em_hours = sum(x["hours"] for x in usage)
+
     # ---- tie-outs
     dr = sum(e.get("debit", 0) for e in correcting_entry); cr = sum(e.get("credit", 0) for e in correcting_entry)
     checks = {
+        "PR timecard equipment hours and dollars = EM usage posted":
+            abs(pr_hours - em_hours) < 0.005 and abs(pr_dollars - posted_total) < 0.005
+            and {t["tc_line"] for t in tc_eq} == {x["tc_line"] for x in usage},
         "every posted usage line classified once":
             len(status) == len(usage) and set(status) == {x["trans"] for x in usage},
         "every telematics unit-day classified once": len(tel_status) == len(tel),
@@ -384,17 +467,25 @@ def export(tel, usage, findings, status, tel_status):
         "posted + corrections = corrected usage by job":
             abs(sum(job_after.values()) - corrected) < 0.005,
         "correcting entry balances (Dr = Cr)": abs(dr - cr) < 0.005,
-        "intercompany due-to = due-from":
-            abs(next(e["credit"] for e in correcting_entry if e["acct"] == "2450.")
-                - next(e["debit"] for e in correcting_entry if e["acct"] == "1450.")) < 0.005,
+        "intercompany due-to = due-from, both directions":
+            abs(intercompany["due_from_paving_on_materials_books"] - intercompany["due_to_materials_on_paving_books"]) < 0.005
+            and abs(intercompany["due_from_materials_on_paving_books"] - intercompany["due_to_paving_on_materials_books"]) < 0.005,
     }
     summary = dict(
         posting_month=mdy(MONTH),
         fleet_units=len(FLEET), units_with_telematics=sum(f["telematics"] for f in FLEET.values()),
-        telematics_unit_days=len(tel), posted_usage_lines=len(usage),
+        telematics_unit_days=len(tel),
+        payroll=dict(timecard_lines=len(timecards), lines_with_equipment=len(tc_eq),
+                     lines_equipment_blank=len(timecards) - len(tc_eq),
+                     pr_batches=sorted({t["pr_batch"] for t in timecards}),
+                     equipment_hours=round(pr_hours, 2), equipment_dollars=pr_dollars,
+                     labor_reclass_lines=len(labor_reclass),
+                     labor_reclass_hours=round(sum(r["labor_hours"] for r in labor_reclass), 2)),
+        posted_usage_lines=len(usage),
         telematics_job_site_hours=round(tel_job_hours, 1), posted_hours_telematics_units=round(posted_tel_hours, 1),
         posted_usage_total=posted_total,
         posted_by_em_company={COMPANIES[k]: money(v) for k, v in sorted(posted_by_co.items())},
+        posted_intercompany={k: money(v) for k, v in sorted(posted_ic.items())},
         line_status=dict(Counter(status.values())),
         corrections_by_category=by_cat,
         held_for_review=held_cat,
@@ -402,9 +493,10 @@ def export(tel, usage, findings, status, tel_status):
         findings_approved=sum(f["action"] == "approve" for f in findings), findings_held=len(held),
         correction_lines=len(rows), correction_total=corr_total,
         corrected_usage_total=corrected,
+        intercompany_corrections=intercompany,
         correcting_entry=correcting_entry,
-        jobs=[dict(job=j, desc=JOBS[j]["desc"], before=money(job_before[j]), after=money(job_after[j]),
-                   change=money(job_after[j] - job_before[j])) for j in JOBS],
+        jobs=[dict(job=j, jc_co=JOBS[j]["jc_co"], desc=JOBS[j]["desc"], before=money(job_before[j]),
+                   after=money(job_after[j]), change=money(job_after[j] - job_before[j])) for j in JOBS],
         tie_out_checks=checks,
     )
     (OUT / "recon_summary_oct2026.json").write_text(json.dumps(summary, indent=2))
@@ -413,11 +505,12 @@ def export(tel, usage, findings, status, tel_status):
 
 
 def run():
-    tel, usage = generate()
-    findings, status, tel_status = reconcile(tel, usage)
-    summary, rows = export(tel, usage, findings, status, tel_status)
-    return tel, usage, findings, status, tel_status, summary, rows
+    tel, usage, timecards = generate()
+    findings, status, tel_status, labor_reclass = reconcile(tel, usage, timecards)
+    summary, rows = export(tel, usage, timecards, findings, status, tel_status, labor_reclass)
+    return dict(tel=tel, usage=usage, timecards=timecards, findings=findings, status=status,
+                tel_status=tel_status, labor_reclass=labor_reclass, summary=summary, rows=rows)
 
 
 if __name__ == "__main__":
-    print(json.dumps(run()[5], indent=2))
+    print(json.dumps(run()["summary"], indent=2))

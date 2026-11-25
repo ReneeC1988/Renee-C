@@ -94,12 +94,12 @@ header,section{display:grid;gap:12px}
   <article class="card">
     <span class="eyebrow">Equipment · Job cost · Intercompany</span>
     <h3>Equipment usage, checked against the machines</h3>
-    <p>A paving contractor charges about 460 lines of equipment usage to jobs each month from crew timecards. I built a reconciliation that compares every machine, every day, to its telematics, fixes the objective errors automatically, routes judgment calls to the superintendent, and posts corrections through the ERP's own usage batch across two companies.</p>
+    <p>Equipment usage is posted with payroll: about 480 timecard lines a month charge machines to jobs. I built a reconciliation that ties usage back to payroll, compares every machine, every day, to its telematics, bills actual hours used, and posts corrections through the ERP's own usage batch, with intercompany in both directions.</p>
     <ul>
       <li>A milling machine's three missed days ($10,660) caught from engine hours and geofences</li>
       <li>Duplicates and stale rates fixed automatically; wrong-job charges moved after approval</li>
-      <li>Hours that don't match the engine held with the dollars at stake, never booked blind</li>
-      <li>Intercompany due-to and due-from tie to the cent; 6 of 6 tie-outs pass</li>
+      <li>Shift hours keyed as machine hours corrected to actual hours; operator labor sent to payroll for reclass</li>
+      <li>Intercompany due-to and due-from tie to the cent both ways; 7 of 7 tie-outs pass</li>
     </ul>
     <div class="links">
       <a class="btn" href="equipment-usage-recon/site/">See the live demo</a>

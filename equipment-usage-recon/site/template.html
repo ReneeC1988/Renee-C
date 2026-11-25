@@ -92,8 +92,8 @@ tr.total td{font-weight:600;border-top:2px solid var(--ink)}
 .cell.sel{outline:2px solid var(--ink);outline-offset:1px}
 .s-MATCHED{background:var(--ok-soft)}
 .s-RATE,.s-DUPLICATE{background:var(--info)}
-.s-UNPOSTED,.s-WRONG_JOB{background:var(--warn)}
-.s-HOURS_VARIANCE,.s-NO_ACTIVITY{background:var(--bad)}
+.s-UNPOSTED,.s-WRONG_JOB,.s-HOURS_VARIANCE{background:var(--warn)}
+.s-NO_ACTIVITY{background:var(--bad)}
 .s-UNVERIFIED{background:repeating-linear-gradient(45deg,var(--line) 0 3px,var(--empty) 3px 6px)}
 .s-IDLE_NO_USAGE{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
 .cell.s-none{background:transparent;cursor:default}
@@ -124,7 +124,7 @@ footer{font-size:.82rem;color:var(--muted)}
 <header>
   <span class="eyebrow">Equipment usage reconciliation · Month-end</span>
   <h1>Copperhollow Equipment Usage Rec</h1>
-  <p>Every hour a paver, roller or loader works on a job is charged to that job at an internal rate, and becomes equipment revenue for the company that owns the machine. This page checks one month of those charges against what the machines' telematics say they did, fixes what can be fixed, holds the judgment calls, and ties the result out across both companies.</p>
+  <p>Equipment usage is posted with payroll: foremen put each machine and its hours on the crew timecard, and the payroll update charges the job at an hourly rate and credits equipment revenue to the company that owns the machine. Usage should be billed on the hours the machine was actually used. This page checks one month of those charges against the machines' telematics, corrects what's wrong through an EM usage batch, sends labor follow-ups to payroll, and ties everything out across both companies.</p>
   <p class="notice">Every company, job, unit, account and amount on this page is fictional. The ERP and telematics feeds are simulated; field and form names are illustrative.</p>
 </header>
 
@@ -177,10 +177,16 @@ footer{font-size:.82rem;color:var(--muted)}
   </div>
   <div class="cols2">
     <div class="sheet"><div class="sheet-head"><h3>GL effect of the correction batch</h3><span class="form-path">Both companies</span></div><div class="tbl-wrap" id="je"></div>
-      <p class="why">The ERP books this when the EM usage batch posts. The materials company's loaders on paving jobs create intercompany revenue on one side and a due-to on the other.</p></div>
+      <p class="why">The ERP books this when the EM usage batch posts. Machines moved both ways this month: materials-company loaders on paving jobs, and paving-company trucks and a skid steer at the plant. Each direction books intercompany revenue and a due-from for the owner, and a due-to for the job.</p></div>
     <div class="sheet"><div class="sheet-head"><h3>Tie-out</h3><span id="tie-pill"></span></div><ul class="checks" id="checks"></ul>
       <h3 style="margin-top:8px">EM usage import file</h3><pre id="imp"></pre></div>
   </div>
+</section>
+
+<section aria-labelledby="pr-h">
+  <div class="sheet"><div class="sheet-head"><h3 id="pr-h">Payroll follow-up: operator labor to reclass</h3><span class="form-path">JC labor cost transfer · no paycheck change</span></div>
+    <div class="tbl-wrap" id="reclass"></div>
+    <p class="why">When the machine was on a different job, its operator usually was too. These lines go to payroll as a job cost transfer; gross pay doesn't change. Cross-company lines also need the intercompany labor entry.</p></div>
 </section>
 
 <footer>Built from <span class="mono">scripts/em_usage_recon.py</span> by <span class="mono">scripts/build_site.py</span>. Rerun them and this page rebuilds from the new data.</footer>
@@ -198,9 +204,9 @@ const STATUS = {
   MATCHED:{label:"Matched", pill:"p-ok", kind:"ok"},
   RATE:{label:"Wrong rate · auto-fix", pill:"p-info", kind:"auto", why:"The rate table changed on 10/16 but this crew's timecard still carried the old rate. Objective, so it is fixed without review."},
   DUPLICATE:{label:"Duplicate · auto-fix", pill:"p-info", kind:"auto", why:"The same timecard line was keyed twice. The extra copy is reversed."},
-  UNPOSTED:{label:"Not posted · approve", pill:"p-warn", kind:"appr", why:"The machine ran inside a job's geofence but nobody put it on a timecard. The job is under-costed and the owner is missing revenue."},
-  WRONG_JOB:{label:"Wrong job · approve", pill:"p-warn", kind:"appr", why:"Usage was charged to the crew's job, but the machine was working on a different one. Total is unchanged; job cost moves."},
-  HOURS_VARIANCE:{label:"Hours off · hold", pill:"p-bad", kind:"hold", why:"Posted hours are more than an hour away from engine hours. Could be standby, shared operator, or a keying error; the superintendent decides."},
+  UNPOSTED:{label:"Not posted · approve", pill:"p-warn", kind:"appr", why:"The machine ran inside a job's geofence and its operator is on the timecard, but the equipment column was left blank, so payroll posted no usage. The job is under-costed and the owner is missing revenue."},
+  WRONG_JOB:{label:"Wrong job · approve", pill:"p-warn", kind:"appr", why:"Payroll charged the usage to the crew's job, but the machine was working on a different one. Equipment cost moves to the right job, and the operator's labor goes on the reclass list for payroll. If the two jobs belong to different companies, intercompany moves too."},
+  HOURS_VARIANCE:{label:"Not actual hours · approve", pill:"p-warn", kind:"appr", why:"Usage is billed on actual hours used. The timecard carried the operator's shift hours as machine hours, so the line is reversed and reposted at the engine hours once the superintendent agrees."},
   NO_ACTIVITY:{label:"No activity · hold", pill:"p-bad", kind:"hold", why:"Usage was posted, but the machine never left the yard. Likely a timecard copied forward; held until someone confirms."},
   UNVERIFIED:{label:"No telematics", pill:"p-mute", kind:"none", why:"Older unit with no device fitted. Usage passes on the timecard alone and is listed for a spot check."},
   IDLE_NO_USAGE:{label:"In yard, nothing posted", pill:"p-mute", kind:"none"},
@@ -217,14 +223,16 @@ const SHEETS = [
    body:()=>table([{h:"Unit",k:"unit",html:r=>`<span class="mono">${esc(r.unit)}</span>`},{h:"Description",k:"desc"},{h:"Category",k:"category"},{h:"Owning company",html:r=>`${r.co} · ${esc(r.owner)}`},{h:"Telematics",html:r=>r.telematics?'<span class="pill p-ok">Fitted</span>':'<span class="pill p-mute">None</span>'}], T.equipment)},
   {id:"rates", label:"Revenue rates", path:"EM › Revenue Rates by Category", why:"Pavers and rollers went up on 10/16. Usage is priced at the rate in effect on the day the machine worked, so any timecard still carrying the old rate after that date is wrong.",
    body:()=>table([{h:"Category",k:"category"},{h:"Description",k:"desc"},{h:"Rev code",k:"rev_code"},{h:"Effective",k:"eff",html:r=>`<span class="mono">${esc(r.eff)}</span>`},{h:"Rate / hr",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Job phase",k:"phase"}], T.rates)},
-  {id:"jobs", label:"Job geofences", path:"Telematics › Geofences ↔ JC Jobs", why:"Each job site is drawn as a geofence in the telematics portal and mapped to its job number. A machine inside a geofence is on that job; the yard and the plant map to no job.",
-   body:()=>table([{h:"Geofence",k:"geofence",html:r=>`<span class="mono">${esc(r.geofence)}</span>`},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Description",k:"desc"}], T.jobs)},
-  {id:"gl", label:"GL & intercompany", path:"GL › Chart of Accounts (Co 1 and Co 2)", why:"Usage debits the job and credits the owner's equipment revenue. When a Co 1 loader works a Co 2 job, the ERP books a due-to and due-from, which must offset to the cent.",
+  {id:"payroll", label:"Payroll timecards", path:"PR › Timecard Entry › Equipment columns", why:"Usage enters the ERP through payroll, so payroll is where most errors start: a blank equipment column, shift hours keyed as machine hours, or the crew's job instead of the machine's. The rec ties every usage line back to its timecard line.",
+   body:()=>table([{h:"Setting",k:"k"},{h:"Value",k:"v"}], T.payroll)},
+  {id:"jobs", label:"Job geofences", path:"Telematics › Geofences ↔ JC Jobs", why:"Each job site is drawn as a geofence in the telematics portal and mapped to its job number and company. The materials company's plant work is a job too, so paving-company trucks working there create intercompany charges. The yard maps to no job.",
+   body:()=>table([{h:"Geofence",k:"geofence",html:r=>`<span class="mono">${esc(r.geofence)}</span>`},{h:"JC Co",k:"co"},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Description",k:"desc"}], T.jobs)},
+  {id:"gl", label:"GL & intercompany", path:"GL › Chart of Accounts (Co 1 and Co 2)", why:"Usage debits the job and credits the owner's equipment revenue. When one company's machine works the other company's job, the ERP books intercompany revenue, a due-from on the owner's books and a due-to on the job's books. Equipment moves both ways, so both pairs must offset to the cent.",
    body:()=>table([{h:"Co",k:"co"},{h:"Account",k:"acct",html:r=>`<span class="mono">${esc(r.acct)}</span>`},{h:"Description",k:"desc"},{h:"Used for",k:"use"}], T.gl)},
   {id:"rules", label:"Match rules", path:"Integration › Settings", why:"Agreed with operations before go-live. Objective errors are fixed automatically; anything that needs field knowledge goes to a person.",
    body:()=>table([{h:"Rule",k:"k"},{h:"Setting",k:"v"}], T.rules)},
 ];
-let curSheet = "rates";
+let curSheet = "payroll";
 function renderTabs(){
   $("tabs").innerHTML = SHEETS.map(s=>`<button class="tab" role="tab" aria-selected="${s.id===curSheet}" data-id="${s.id}"><span class="tick" aria-hidden="true">✓</span>${esc(s.label)}</button>`).join("");
   const s = SHEETS.find(x=>x.id===curSheet);
@@ -247,8 +255,8 @@ D.units.forEach((u,ui)=>{
   });
 });
 $("grid").innerHTML = html;
-$("legend").innerHTML = [["MATCHED","var(--ok-soft)"],["RATE","var(--info)"],["UNPOSTED","var(--warn)"],["HOURS_VARIANCE","var(--bad)"],["UNVERIFIED","repeating-linear-gradient(45deg,var(--line) 0 3px,var(--empty) 3px 6px)"],["IDLE_NO_USAGE","transparent;box-shadow:inset 0 0 0 1px var(--line)"]]
-  .map(([k,c])=>`<span><i style="background:${c}"></i>${k==="RATE"?"Auto-fixed (rate, duplicate)":k==="UNPOSTED"?"Fix after approval (unposted, wrong job)":k==="HOURS_VARIANCE"?"Held for review":STATUS[k].label}</span>`).join("");
+$("legend").innerHTML = [["MATCHED","var(--ok-soft)"],["RATE","var(--info)"],["UNPOSTED","var(--warn)"],["NO_ACTIVITY","var(--bad)"],["UNVERIFIED","repeating-linear-gradient(45deg,var(--line) 0 3px,var(--empty) 3px 6px)"],["IDLE_NO_USAGE","transparent;box-shadow:inset 0 0 0 1px var(--line)"]]
+  .map(([k,c])=>`<span><i style="background:${c}"></i>${k==="RATE"?"Auto-fixed (rate, duplicate)":k==="UNPOSTED"?"Fix after approval (unposted, wrong job, actual hours)":k==="NO_ACTIVITY"?"Held for review":STATUS[k].label}</span>`).join("");
 
 let pos = ND-1, selU = null, selD = null, timer = null;
 function statsAt(di){
@@ -286,7 +294,9 @@ function renderDetail(){
   if(selD>pos){ h += `<p class="empty">The reconciliation hasn't reached this day yet.</p>`; $("detail").innerHTML=h; return; }
   h += c.tel ? `<dl class="kv"><dt>Telematics</dt><dd>${c.tel.hours.toFixed(1)} engine hrs · idle ${c.tel.idle}%</dd><dt>Location</dt><dd>${esc(c.tel.geofence)}${c.tel.job?` → job ${esc(c.tel.job)}`:" (not a job)"}</dd><dt>Hour meter</dt><dd>${c.tel.meter[0].toFixed(1)} → ${c.tel.meter[1].toFixed(1)}</dd></dl>`
              : `<p class="empty">No telematics device on this unit.</p>`;
-  h += `<h3 style="font-size:.9rem">Posted usage</h3>` + (c.lines.length ? table([{h:"Trans",k:"trans",html:r=>`<span class="mono">${esc(r.trans)}</span>`},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Hrs",k:"hours",num:true,html:r=>r.hours.toFixed(1)},{h:"Rate",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Amount",k:"amount",num:true,html:r=>fmt(r.amount)}], c.lines) : `<p class="empty">Nothing posted from timecards.</p>`);
+  h += `<h3 style="font-size:.9rem">Usage posted by payroll</h3>` + (c.lines.length ? table([{h:"Timecard",k:"tc",html:r=>`<span class="mono">${esc(r.tc)}</span><div class="why">${esc(r.employee)} · ${esc(r.pr_batch)} · ${r.labor.toFixed(1)} labor hrs</div>`},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Equip hrs",k:"hours",num:true,html:r=>r.hours.toFixed(1)},{h:"Rate",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Amount",k:"amount",num:true,html:r=>fmt(r.amount)}], c.lines)
+    : c.blank ? `<p class="empty">Operator <span class="mono">${esc(c.blank.employee)}</span> is on timecard <span class="mono">${esc(c.blank.tc)}</span> (${esc(c.blank.pr_batch)}) for job <span class="mono">${esc(c.blank.job)}</span>, ${c.blank.labor.toFixed(1)} labor hrs, with the equipment column blank.</p>`
+    : `<p class="empty">Nothing on a timecard for this machine.</p>`);
   c.f.forEach(id=>{ const f=F[id], fs=STATUS[f.category];
     h += `<div class="finding"><div class="sheet-head"><span class="mono">${esc(f.id)}</span><span class="pill ${fs.pill}">${esc(fs.label)}</span></div><p>${esc(f.detail)}</p><p class="why">${esc(fs.why||"")}</p>`;
     h += f.corrections.length ? `<h3 style="font-size:.85rem">Correcting usage lines</h3>${corrTable(f.corrections)}` : `<p class="why"><strong>At stake if confirmed:</strong> ${fmt(f.at_stake)}. Nothing is posted until the superintendent answers.</p>`;
@@ -309,8 +319,9 @@ pos = -1; render(); pos = ND-1; render();
 const C = S.corrections_by_category;
 const moved = D.findings.filter(f=>f.category==="WRONG_JOB").reduce((a,f)=>a+f.corrections.filter(x=>x.amount>0).reduce((b,x)=>b+x.amount,0),0);
 const steps = [
-  ["Usage posted from timecards", S.posted_usage_total, null, `${S.posted_usage_lines} lines`],
+  ["Usage posted by payroll", S.posted_usage_total, null, `${S.posted_usage_lines} lines`],
   ["Add usage telematics found, not posted", C.UNPOSTED.net, true, `${C.UNPOSTED.count} unit-days`],
+  ["Correct to actual hours used", C.HOURS_VARIANCE.net, true, `${C.HOURS_VARIANCE.count} unit-days where shift hours were keyed`],
   ["Move usage to the job the machine was on", C.WRONG_JOB.net, true, `${C.WRONG_JOB.count} unit-days · ${fmt(moved)} moved`],
   ["Reprice at the current rate table", C.RATE.net, true, `${C.RATE.count} lines`],
   ["Reverse duplicate lines", C.DUPLICATE.net, true, `${C.DUPLICATE.count} lines`],
@@ -319,8 +330,8 @@ const maxAdj = Math.max(...steps.slice(1).map(s=>Math.abs(s[1])));
 $("bridge").innerHTML = `<table class="bridge"><thead><tr><th>Step</th><th class="num">Amount</th><th></th></tr></thead><tbody>` +
   steps.map(([k,v,adj,n])=>`<tr><td>${esc(k)}<div class="why">${esc(n)}</div></td><td class="num">${adj&&v>0?"+":""}${fmt(v)}</td><td class="bar">${adj?`<i class="${v>0?'pos':v<0?'neg':'zero'}" style="width:${v?Math.max(3,Math.abs(v)/maxAdj*100):0}%"></i>`:""}</td></tr>`).join("") +
   `<tr class="total"><td>Corrected equipment usage</td><td class="num">${fmt(S.corrected_usage_total)}</td><td></td></tr>` +
-  `<tr><td class="muted">Held for review, not booked<div class="why">${S.held_for_review.HOURS_VARIANCE.count} hours variances · ${S.held_for_review.NO_ACTIVITY.count} days in the yard</div></td><td class="num muted">${fmt(S.held_for_review.HOURS_VARIANCE.at_stake+S.held_for_review.NO_ACTIVITY.at_stake)}</td><td></td></tr></tbody></table>`;
-$("jobs").innerHTML = table([{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span><div class="why">${esc(r.desc)}</div>`},{h:"Before",k:"before",num:true,html:r=>fmt(r.before)},{h:"After",k:"after",num:true,html:r=>fmt(r.after)},{h:"Change",k:"change",num:true,html:r=>`${r.change>0?"+":""}${fmt(r.change)}`}], S.jobs,
+  `<tr><td class="muted">Held for review, not booked<div class="why">${S.held_for_review.NO_ACTIVITY.count} days posted while the unit sat in the yard</div></td><td class="num muted">${fmt(S.held_for_review.NO_ACTIVITY.at_stake)}</td><td></td></tr></tbody></table>`;
+$("jobs").innerHTML = table([{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span> <span class="pill p-mute">Co ${r.jc_co}</span><div class="why">${esc(r.desc)}</div>`},{h:"Before",k:"before",num:true,html:r=>fmt(r.before)},{h:"After",k:"after",num:true,html:r=>fmt(r.after)},{h:"Change",k:"change",num:true,html:r=>`${r.change>0?"+":""}${fmt(r.change)}`}], S.jobs,
   `<tr class="total"><td>Total</td><td class="num">${fmt(S.posted_usage_total)}</td><td class="num">${fmt(S.corrected_usage_total)}</td><td class="num">+${fmt(S.correction_total)}</td></tr>`);
 const je = S.correcting_entry;
 $("je").innerHTML = table([{h:"Co",k:"co"},{h:"Account",k:"acct",html:r=>`<span class="mono">${esc(r.acct)}</span>`},{h:"Description",k:"desc"},{h:"Debit",num:true,html:r=>r.debit!=null?fmt(r.debit):""},{h:"Credit",num:true,html:r=>r.credit!=null?fmt(r.credit):""}], je,
@@ -328,6 +339,7 @@ $("je").innerHTML = table([{h:"Co",k:"co"},{h:"Account",k:"acct",html:r=>`<span 
 const ck = S.tie_out_checks, allOk = Object.values(ck).every(Boolean);
 $("checks").innerHTML = Object.entries(ck).map(([k,v])=>`<li><span class="pill ${v?'p-ok':'p-bad'}">${v?"PASS":"FAIL"}</span>${esc(k.charAt(0).toUpperCase()+k.slice(1))}</li>`).join("");
 $("tie-pill").innerHTML = `<span class="pill ${allOk?'p-ok':'p-bad'}">${Object.values(ck).filter(Boolean).length} of ${Object.keys(ck).length} pass</span>`;
+$("reclass").innerHTML = table([{h:"Employee",k:"employee",html:r=>`<span class="mono">${esc(r.employee)}</span>`},{h:"Date",k:"date",html:r=>dlabel(r.date)},{h:"Timecard",k:"tc_line",html:r=>`<span class="mono">${esc(r.tc_line)}</span><div class="why">${esc(r.pr_batch)}</div>`},{h:"Hours",k:"labor_hours",num:true,html:r=>r.labor_hours.toFixed(1)},{h:"From job",k:"from_job",html:r=>`<span class="mono">${esc(r.from_job)}</span>`},{h:"To job",k:"to_job",html:r=>`<span class="mono">${esc(r.to_job)}</span>`},{h:"Cross-company",html:r=>r.cross_company==="Y"?'<span class="pill p-warn">Co '+r.from_co+' → Co '+r.to_co+'</span>':'<span class="pill p-mute">No</span>'},{h:"Why",k:"reason"}], D.labor_reclass);
 const IR = D.import_rows, cols = Object.keys(IR[0]);
 $("imp").textContent = [cols.join(","), ...IR.slice(0,14).map(r=>cols.map(k=>r[k]).join(","))].join("\n") + `\n… ${IR.length} lines in all, ${fmt(S.correction_total)} net`;
 </script>

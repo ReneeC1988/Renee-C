@@ -1,9 +1,4 @@
 id,category,unit,date,posted_lines,posted_hours,engine_hours,dollars_at_stake,detail
-F001,HOURS_VARIANCE,K-452,2026-10-01,EM-70002,9.0,6.9,-150.0,9.0 hrs posted vs 6.9 engine hrs (idle 16%)
-F011,HOURS_VARIANCE,P-204,2026-10-01,EM-70009,10.0,7.8,-370.0,10.0 hrs posted vs 7.8 engine hrs (idle 17%)
-F013,HOURS_VARIANCE,R-302,2026-10-13,EM-70176,9.5,5.7,-272.0,9.5 hrs posted vs 5.7 engine hrs (idle 25%)
-F021,NO_ACTIVITY,R-308,2026-10-12,EM-70161,8.0,1.0,-544.0,"8.0 hrs posted to 26-1125, but unit sat in GF-YARD (1.0 engine hrs)"
-F027,NO_ACTIVITY,S-503,2026-10-27,EM-70388,8.0,1.1,-384.0,"8.0 hrs posted to 26-1104, but unit sat in GF-YARD (1.1 engine hrs)"
-F028,HOURS_VARIANCE,T-601,2026-10-12,EM-70163,10.0,5.3,-369.0,10.0 hrs posted vs 5.3 engine hrs (idle 25%)
-F031,NO_ACTIVITY,T-604,2026-10-07,EM-70108,8.0,0.4,-656.0,"8.0 hrs posted to 26-1112, but unit sat in GF-YARD (0.4 engine hrs)"
-F035,HOURS_VARIANCE,X-552,2026-10-07,EM-70112,11.0,5.8,-600.0,11.0 hrs posted vs 5.8 engine hrs (idle 30%)
+F023,NO_ACTIVITY,R-307,2026-10-19,EM-70263,8.0,0.6,-576.0,"8.0 hrs posted to 26-1104, but unit sat in GF-YARD (0.6 engine hrs)"
+F024,NO_ACTIVITY,R-308,2026-10-13,EM-70181,8.0,1.0,-544.0,"8.0 hrs posted to 26-1118, but unit sat in GF-YARD (1.0 engine hrs)"
+F035,NO_ACTIVITY,T-604,2026-10-15,EM-70227,8.0,0.9,-656.0,"8.0 hrs posted to 26-1104, but unit sat in GF-YARD (0.9 engine hrs)"

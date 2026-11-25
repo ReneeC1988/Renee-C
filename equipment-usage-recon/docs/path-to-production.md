@@ -19,13 +19,14 @@ The demo uses simulated feeds. This page covers what the same design looks like 
 | Read posted usage | SQL views over EM cost detail and JC cost detail (read-only reporting access), or a saved report export |
 | Rates | EM revenue rates by category, with equipment-level overrides and job revenue templates where used |
 | Post corrections | **Import Manager** into an EM usage posting batch (this demo's file), then validate and post |
-| Usage source | PR timecards with equipment columns, or EM usage entry from daily equipment logs |
+| Usage source | PR timecard entry with equipment columns; the PR ledger update posts usage to EM and JC. Read PR timecard detail to tie usage back to its timecard line |
+| Labor follow-up | Wrong-job operator hours fixed with a JC cost adjustment (labor) or a PR timecard correction before the batch closes |
 | Meters | The same telematics feed can post EM meter readings so preventive maintenance runs on real hours |
 | Intercompany | Cross-company usage (EM Co ≠ JC Co) books the due-to/due-from automatically on post |
 
 Notes:
 - **No direct SQL writes.** Reads only; every change goes through a batch.
-- **Run before payroll and JC close each month** so corrected job cost flows to the WIP schedule.
+- **Run weekly after each payroll batch posts,** and once more before JC close, so foremen fix timecards while they remember the day and corrected job cost flows to the WIP schedule.
 - Trimble offers equipment and telematics integrations through its own platform; worth checking before building a custom feed.
 
 ## Oracle NetSuite
@@ -49,7 +50,7 @@ NetSuite has no native construction equipment-rate module, so the design adds on
 
 ## Rollout plan
 
-1. **Discovery (2 weeks):** where usage is entered, rate structure (hourly, daily, standby), which units have telematics, who approves.
+1. **Discovery (2 weeks):** where usage is entered, rate structure (hourly on actual hours used), which units have telematics, who approves.
 2. **Map geofences to jobs (1 week):** with the equipment manager; set a standard for naming new job geofences at mobilization.
 3. **Parallel run (1 close):** run the rec but post nothing; review every finding with two superintendents to tune the hours tolerance.
 4. **Go live:** auto-fix duplicates and rates first, add approved categories once supers trust the evidence.

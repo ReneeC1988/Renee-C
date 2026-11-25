@@ -19,14 +19,28 @@ One row per unit per day, pulled nightly from the telematics provider. Most OEM 
 
 **[GUESS]** A unit that works two jobs in one day is assigned to the geofence with the most hours. Production should split by geofence time.
 
+### Payroll timecards (`data/pr_timecards_oct2026.csv`)
+
+One line per operator per day, as entered in payroll timecard entry. The equipment columns are what the payroll ledger update posts to EM usage.
+
+| Field | Meaning |
+|---|---|
+| tc_line | Timecard line ID (every EM usage line traces back to one) |
+| pr_co, pr_batch, pr_end_date | Payroll company (the company that owns the job [GUESS]), weekly batch, period ending Friday |
+| employee, date, job, phase | Operator, work date, job and phase for the labor |
+| labor_hours | Operator's hours (shift) |
+| equipment, equip_hours, equip_rate | Equipment columns: unit, hours the machine was used, rate. Blank equipment = no usage posted |
+
 ### Posted EM usage (`data/em_usage_posted_oct2026.csv`)
 
-What the ERP already holds: usage posted from payroll timecards.
+What the ERP already holds: usage posted by the payroll ledger update. Ties back to the timecard by `tc_line`.
 
 | Field | Meaning |
 |---|---|
 | trans | EM transaction number |
 | em_co | Company that owns the unit (receives the revenue) |
+| jc_co | Company that owns the job (pays the cost) |
+| pr_batch, tc_line, employee | Payroll batch and timecard line the usage came from |
 | unit, date | Equipment and actual date |
 | job, phase, cost_type | JC posting (JC company 2) |
 | rev_code | 1 = hourly operating |
@@ -45,7 +59,7 @@ Uploaded through the ERP's Import Manager into an **EM usage posting batch**, on
 | Equipment | R-305 | |
 | RevCode | 1 | |
 | ActualDate | 10/21/2026 | The day the machine worked, so the rate in effect that day applies |
-| JCCo / Job / Phase / JCCostType | 2 / 26-1118 / 20-200 / 3 | Where the cost lands |
+| JCCo / Job / Phase / JCCostType | 2 / 26-1118 / 20-200 / 3 | Where the cost lands; JCCo ≠ Co means intercompany |
 | WorkUM / TimeUnits | HRS / -8.00 | Negative hours reverse an original line |
 | Rate / Dollars | 72.00 / -576.00 | |
 | Description | `F016 WRONG_JOB: Reverse EM-70301 ...` | Finding ID ties every line back to the rec |
@@ -55,5 +69,9 @@ Uploaded through the ERP's Import Manager into an **EM usage posting batch**, on
 - Form: EM usage posting (revenue breakdown follows the revenue code)
 - Record type: single record per line, comma delimited
 - Defaults: GL accounts from the equipment's department and revenue code (not overridden in the file)
-- Intercompany: allowed, because Co 1 units post to Co 2 jobs; the ERP creates the due-to/due-from on posting
+- Intercompany: allowed both ways (Co 1 loaders on Co 2 jobs, Co 2 trucks on the Co 1 plant job); the ERP creates the due-to/due-from on posting
 - After upload: validate the batch, review the batch total against `correction_total` in the run summary, then post
+
+## Output: labor reclass for payroll (`output/labor_reclass_for_payroll_oct2026.csv`)
+
+Operator hours that payroll charged to the crew's job while the machine (and operator) worked another. Booked as a JC labor cost transfer; gross pay doesn't change. `cross_company = Y` lines also need the intercompany labor entry.

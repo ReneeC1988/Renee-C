@@ -79,6 +79,7 @@ The three held invoices show what the engine catches: a ticket number that does 
 | `output/run_summary_oct2026.json` | Run totals and tie-out results |
 | [`docs/import-layouts.md`](docs/import-layouts.md) | File layouts and import template settings |
 | [`docs/api-integration.md`](docs/api-integration.md) | API integration flow into the ERP |
+| [`docs/path-to-production.md`](docs/path-to-production.md) | How this would run against Vista, NetSuite and Deltek, and the rollout plan |
 | `scripts/ap_pipeline.py` | The whole pipeline in about 250 lines of Python, standard library only |
 | `scripts/mock_servers.py` | Mock ticketing-provider API and mock ERP AP API (batches, invoices, validate, post, role checks) |
 | `scripts/api_demo.py` | The integration service: pulls tickets, maps codes, matches, sends invoices to the ERP API, logs every call |

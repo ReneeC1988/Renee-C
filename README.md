@@ -1,4 +1,4 @@
-# Finance & ERP Automation Portfolio
+# Renee Campbell · Finance & ERP Automation Portfolio
 
 Projects that show how I automate accounting work in a construction and materials business: AP, imports into the ERP, API integrations, and month-end reconciliations.
 
@@ -6,7 +6,7 @@ Projects that show how I automate accounting work in a construction and material
 
 ## About
 
-I'm a Financial Controller who automates the work accounting teams do by hand: SQL queries, ERP imports (Vista), API integrations and AI-assisted (Claude) workflows that cut keying, catch errors before they post, and tie out to the cent.
+I'm a Financial Controller (MBA, MSE, CPA Candidate) for a dual-entity construction and manufacturing business who automates the work accounting teams do by hand: SQL queries, ERP imports (Vista), API integrations and AI-assisted (Claude) workflows that cut keying, catch errors before they post, and tie out to the cent.
 
 **Live portfolio:** https://reneec1988.github.io/Renee-C/
 

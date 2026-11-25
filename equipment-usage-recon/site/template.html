@@ -1,0 +1,333 @@
+<title>Copperhollow Equipment Usage Rec</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: equipment-yard dispatch board. Setup sheets on top, a unit x day board that fills in as the rec runs, a detail panel beside it, then the bridge, entry and tie-out. Same visual family as the AP piece. */
+:root{
+  --bg:#eceae4; --panel:#f8f7f3; --ink:#1d1f1c; --muted:#5f625b; --line:#cfccc2; --empty:#e2dfd7;
+  --asphalt:#2a2c29; --amber:#c97a00; --amber-soft:#f6e3bf;
+  --ok:#2f7a45; --ok-soft:#cfe8d6; --warn:#a35d00; --warn-soft:#f3d9a8; --bad:#b0342a; --bad-soft:#f2cfc9;
+  --info:#2c5d8a; --info-soft:#cfe0ef;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161816; --panel:#1f221f; --ink:#e8e6df; --muted:#a3a59c; --line:#353933; --empty:#262a26;
+  --asphalt:#0e0f0e; --amber:#f0a32a; --amber-soft:#3b2c12;
+  --ok:#6cc48a; --ok-soft:#1f4029; --warn:#f0a32a; --warn-soft:#4a3612; --bad:#ef7b6f; --bad-soft:#4a221d;
+  --info:#7fb2e0; --info-soft:#1d3347; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161816; --panel:#1f221f; --ink:#e8e6df; --muted:#a3a59c; --line:#353933; --empty:#262a26;
+  --asphalt:#0e0f0e; --amber:#f0a32a; --amber-soft:#3b2c12;
+  --ok:#6cc48a; --ok-soft:#1f4029; --warn:#f0a32a; --warn-soft:#4a3612; --bad:#ef7b6f; --bad-soft:#4a221d;
+  --info:#7fb2e0; --info-soft:#1d3347; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,4.5vw,3rem);line-height:1.05}
+h2{font-size:1.65rem;line-height:1.1}
+h3{font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:var(--amber)}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{display:grid;gap:10px}
+.notice{font-size:.85rem;color:var(--muted);border-left:3px solid var(--amber);padding-left:10px}
+section{display:grid;gap:16px}
+section>*,.wrap>*,.side>*,.sheet>*{min-width:0}
+.sec-head{display:grid;gap:6px}
+a{color:var(--info)}
+
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font:600 .85rem var(--body);background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{background:var(--asphalt);color:#f4f2ea;border-color:var(--asphalt)}
+.tab:focus-visible,.btn:focus-visible,.cell:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.tick{color:var(--ok);font-weight:700}
+.tab[aria-selected="true"] .tick{color:#8fdca6}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:12px}
+.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.form-path{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th{font:600 .72rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;border-bottom:1px solid var(--line);padding:6px 10px;white-space:nowrap}
+td{border-bottom:1px solid var(--line);padding:6px 10px;vertical-align:top}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tr.total td{font-weight:600;border-top:2px solid var(--ink)}
+.pill{display:inline-block;font:500 .72rem var(--mono);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)}
+.p-mute{background:var(--line);color:var(--ink)}
+.why{font-size:.85rem;color:var(--muted)}
+
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 .88rem var(--body);border:1px solid var(--asphalt);background:var(--asphalt);color:#f4f2ea;border-radius:4px;padding:8px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.speed{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+.speed select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 6px}
+.progress{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-left:auto}
+
+.stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+@media (max-width:860px){.stats{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.stat{display:grid;gap:2px;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.stat small{font:500 .68rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stat strong{font-family:var(--mono);font-size:1.1rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat.k-auto{border-top:3px solid var(--info)} .stat.k-appr{border-top:3px solid var(--warn)} .stat.k-hold{border-top:3px solid var(--bad)} .stat.k-ok{border-top:3px solid var(--ok)}
+
+.console{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:960px){.console{grid-template-columns:minmax(0,1fr)}}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;overflow-x:auto}
+.grid{display:grid;grid-template-columns:auto repeat(var(--days),minmax(18px,1fr));gap:3px;min-width:620px;align-items:center}
+.gh{font:500 .62rem var(--mono);color:var(--muted);text-align:center;line-height:1.1}
+.gh.wk{color:var(--ink)}
+.ul{font:500 .74rem var(--mono);white-space:nowrap;padding-right:8px;display:flex;gap:6px;align-items:center}
+.ul .co1{font:600 .6rem var(--mono);color:var(--amber);border:1px solid var(--amber);border-radius:3px;padding:0 3px}
+.ul .notel{font:600 .6rem var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:3px;padding:0 3px}
+.cat{grid-column:1/-1;font:600 .66rem var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding-top:6px}
+.cell{height:18px;border-radius:3px;border:0;padding:0;cursor:pointer;background:var(--empty);transition:background .15s}
+.cell.future{background:var(--empty)!important;cursor:default}
+.cell.sel{outline:2px solid var(--ink);outline-offset:1px}
+.s-MATCHED{background:var(--ok-soft)}
+.s-RATE,.s-DUPLICATE{background:var(--info)}
+.s-UNPOSTED,.s-WRONG_JOB{background:var(--warn)}
+.s-HOURS_VARIANCE,.s-NO_ACTIVITY{background:var(--bad)}
+.s-UNVERIFIED{background:repeating-linear-gradient(45deg,var(--line) 0 3px,var(--empty) 3px 6px)}
+.s-IDLE_NO_USAGE{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.cell.s-none{background:transparent;cursor:default}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{display:inline-block;width:14px;height:12px;border-radius:2px}
+
+.side{display:grid;gap:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:.86rem}
+.kv dt{color:var(--muted)} .kv dd{margin:0;font-family:var(--mono)}
+.finding{border:1px solid var(--line);border-radius:6px;padding:10px;display:grid;gap:8px}
+.finding p{font-size:.86rem}
+.empty{font-size:.86rem;color:var(--muted)}
+
+.bridge td.bar{width:34%}
+.bar i{display:block;height:10px;border-radius:2px}
+.bar .pos{background:var(--warn)} .bar .neg{background:var(--info)} .bar .zero{background:var(--line);width:2px}
+.cols2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.cols2{grid-template-columns:minmax(0,1fr)}}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:.88rem}
+.checks li{display:flex;gap:8px;align-items:baseline}
+pre{margin:0;font-family:var(--mono);font-size:.74rem;line-height:1.45;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px;overflow:auto;max-height:260px;white-space:pre}
+footer{font-size:.82rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">Equipment usage reconciliation · Month-end</span>
+  <h1>Copperhollow Equipment Usage Rec</h1>
+  <p>Every hour a paver, roller or loader works on a job is charged to that job at an internal rate, and becomes equipment revenue for the company that owns the machine. This page checks one month of those charges against what the machines' telematics say they did, fixes what can be fixed, holds the judgment calls, and ties the result out across both companies.</p>
+  <p class="notice">Every company, job, unit, account and amount on this page is fictional. The ERP and telematics feeds are simulated; field and form names are illustrative.</p>
+</header>
+
+<section aria-labelledby="setup-h">
+  <div class="sec-head">
+    <span class="eyebrow">Part 1</span>
+    <h2 id="setup-h">ERP back-end setup</h2>
+    <p class="muted">What has to be in place before the reconciliation can trust its own answers. Each sheet says why it matters.</p>
+  </div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="sheet" class="sheet" role="tabpanel"></div>
+</section>
+
+<section aria-labelledby="run-h">
+  <div class="sec-head">
+    <span class="eyebrow">Part 2</span>
+    <h2 id="run-h">October 2026, reconciled day by day</h2>
+    <p class="muted">One square per machine per workday. Press Run to watch the reconciliation sweep the month, or select any square to see the telematics, the posted usage and the correction.</p>
+  </div>
+  <div class="controls">
+    <button class="btn" id="play">Run reconciliation</button>
+    <button class="btn ghost" id="step">Next day</button>
+    <button class="btn ghost" id="reset">Show final state</button>
+    <label class="speed" for="spd">Speed
+      <select id="spd"><option value="700">Slow</option><option value="350" selected>Normal</option><option value="120">Fast</option></select>
+    </label>
+    <span class="progress" id="prog"></span>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="console">
+    <div class="board">
+      <div class="grid" id="grid" role="grid" aria-label="Units by workday"></div>
+      <div class="legend" id="legend"></div>
+    </div>
+    <div class="side">
+      <div class="sheet" id="detail" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="res-h">
+  <div class="sec-head">
+    <span class="eyebrow">Part 3</span>
+    <h2 id="res-h">Bridge, correcting entry and tie-out</h2>
+  </div>
+  <div class="cols2">
+    <div class="sheet"><div class="sheet-head"><h3>Usage bridge</h3><span class="form-path">EM revenue = JC equipment cost</span></div><div class="tbl-wrap" id="bridge"></div>
+      <p class="why">Wrong-job corrections net to zero in total but move cost between jobs, which is what job margins and WIP schedules depend on. Held items are disclosed, not booked.</p></div>
+    <div class="sheet"><div class="sheet-head"><h3>Job cost, before and after</h3><span class="form-path">JC · cost type 3 Equipment</span></div><div class="tbl-wrap" id="jobs"></div></div>
+  </div>
+  <div class="cols2">
+    <div class="sheet"><div class="sheet-head"><h3>GL effect of the correction batch</h3><span class="form-path">Both companies</span></div><div class="tbl-wrap" id="je"></div>
+      <p class="why">The ERP books this when the EM usage batch posts. The materials company's loaders on paving jobs create intercompany revenue on one side and a due-to on the other.</p></div>
+    <div class="sheet"><div class="sheet-head"><h3>Tie-out</h3><span id="tie-pill"></span></div><ul class="checks" id="checks"></ul>
+      <h3 style="margin-top:8px">EM usage import file</h3><pre id="imp"></pre></div>
+  </div>
+</section>
+
+<footer>Built from <span class="mono">scripts/em_usage_recon.py</span> by <span class="mono">scripts/build_site.py</span>. Rerun them and this page rebuilds from the new data.</footer>
+</div>
+
+<script>
+const D = /*__DATA__*/{};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = n => (n<0?"−$":"$") + Math.abs(Number(n)).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const S = D.summary, F = Object.fromEntries(D.findings.map(f=>[f.id,f]));
+const dlabel = iso => { const d = new Date(iso+"T12:00:00"); return `${d.getMonth()+1}/${d.getDate()}`; };
+
+const STATUS = {
+  MATCHED:{label:"Matched", pill:"p-ok", kind:"ok"},
+  RATE:{label:"Wrong rate · auto-fix", pill:"p-info", kind:"auto", why:"The rate table changed on 10/16 but this crew's timecard still carried the old rate. Objective, so it is fixed without review."},
+  DUPLICATE:{label:"Duplicate · auto-fix", pill:"p-info", kind:"auto", why:"The same timecard line was keyed twice. The extra copy is reversed."},
+  UNPOSTED:{label:"Not posted · approve", pill:"p-warn", kind:"appr", why:"The machine ran inside a job's geofence but nobody put it on a timecard. The job is under-costed and the owner is missing revenue."},
+  WRONG_JOB:{label:"Wrong job · approve", pill:"p-warn", kind:"appr", why:"Usage was charged to the crew's job, but the machine was working on a different one. Total is unchanged; job cost moves."},
+  HOURS_VARIANCE:{label:"Hours off · hold", pill:"p-bad", kind:"hold", why:"Posted hours are more than an hour away from engine hours. Could be standby, shared operator, or a keying error; the superintendent decides."},
+  NO_ACTIVITY:{label:"No activity · hold", pill:"p-bad", kind:"hold", why:"Usage was posted, but the machine never left the yard. Likely a timecard copied forward; held until someone confirms."},
+  UNVERIFIED:{label:"No telematics", pill:"p-mute", kind:"none", why:"Older unit with no device fitted. Usage passes on the timecard alone and is listed for a spot check."},
+  IDLE_NO_USAGE:{label:"In yard, nothing posted", pill:"p-mute", kind:"none"},
+};
+
+/* ---------- Part 1 ---------- */
+function table(cols, rows, totalRow){
+  return `<div class="tbl-wrap"><table><thead><tr>${cols.map(c=>`<th class="${c.num?'num':''}">${esc(c.h)}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.num?'num':''}">${c.html?c.html(r):esc(r[c.k])}</td>`).join("")}</tr>`).join("")}${totalRow||""}</tbody></table></div>`;
+}
+const T = D.setup;
+const SHEETS = [
+  {id:"eq", label:"Equipment master", path:"EM › Equipment Master", why:"Each unit belongs to one company and one category. The category sets its rate; the owning company receives the revenue. Units without a telematics device are flagged so the rec knows it cannot verify them.",
+   body:()=>table([{h:"Unit",k:"unit",html:r=>`<span class="mono">${esc(r.unit)}</span>`},{h:"Description",k:"desc"},{h:"Category",k:"category"},{h:"Owning company",html:r=>`${r.co} · ${esc(r.owner)}`},{h:"Telematics",html:r=>r.telematics?'<span class="pill p-ok">Fitted</span>':'<span class="pill p-mute">None</span>'}], T.equipment)},
+  {id:"rates", label:"Revenue rates", path:"EM › Revenue Rates by Category", why:"Pavers and rollers went up on 10/16. Usage is priced at the rate in effect on the day the machine worked, so any timecard still carrying the old rate after that date is wrong.",
+   body:()=>table([{h:"Category",k:"category"},{h:"Description",k:"desc"},{h:"Rev code",k:"rev_code"},{h:"Effective",k:"eff",html:r=>`<span class="mono">${esc(r.eff)}</span>`},{h:"Rate / hr",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Job phase",k:"phase"}], T.rates)},
+  {id:"jobs", label:"Job geofences", path:"Telematics › Geofences ↔ JC Jobs", why:"Each job site is drawn as a geofence in the telematics portal and mapped to its job number. A machine inside a geofence is on that job; the yard and the plant map to no job.",
+   body:()=>table([{h:"Geofence",k:"geofence",html:r=>`<span class="mono">${esc(r.geofence)}</span>`},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Description",k:"desc"}], T.jobs)},
+  {id:"gl", label:"GL & intercompany", path:"GL › Chart of Accounts (Co 1 and Co 2)", why:"Usage debits the job and credits the owner's equipment revenue. When a Co 1 loader works a Co 2 job, the ERP books a due-to and due-from, which must offset to the cent.",
+   body:()=>table([{h:"Co",k:"co"},{h:"Account",k:"acct",html:r=>`<span class="mono">${esc(r.acct)}</span>`},{h:"Description",k:"desc"},{h:"Used for",k:"use"}], T.gl)},
+  {id:"rules", label:"Match rules", path:"Integration › Settings", why:"Agreed with operations before go-live. Objective errors are fixed automatically; anything that needs field knowledge goes to a person.",
+   body:()=>table([{h:"Rule",k:"k"},{h:"Setting",k:"v"}], T.rules)},
+];
+let curSheet = "rates";
+function renderTabs(){
+  $("tabs").innerHTML = SHEETS.map(s=>`<button class="tab" role="tab" aria-selected="${s.id===curSheet}" data-id="${s.id}"><span class="tick" aria-hidden="true">✓</span>${esc(s.label)}</button>`).join("");
+  const s = SHEETS.find(x=>x.id===curSheet);
+  $("sheet").innerHTML = `<div class="sheet-head"><h3>${esc(s.label)}</h3><span class="form-path">${esc(s.path)}</span></div>${s.body()}<p class="why">${esc(s.why)}</p>`;
+}
+$("tabs").addEventListener("click", e=>{const b=e.target.closest(".tab"); if(b){curSheet=b.dataset.id; renderTabs();}});
+renderTabs();
+
+/* ---------- Part 2: board ---------- */
+const ND = D.days.length;
+$("grid").style.setProperty("--days", ND);
+let html = `<div></div>` + D.days.map(d=>{const dt=new Date(d+"T12:00:00");return `<div class="gh ${dt.getDay()===1?'wk':''}">${dt.getDate()}</div>`;}).join("");
+let lastCat = null;
+D.units.forEach((u,ui)=>{
+  if(u.category!==lastCat){ html += `<div class="cat">${esc(u.desc)}s</div>`; lastCat=u.category; }
+  html += `<div class="ul">${esc(u.unit)}${u.em_co===1?'<span class="co1" title="Owned by Copperhollow Materials Co.">CO1</span>':''}${!u.telematics?'<span class="notel" title="No telematics device">NO GPS</span>':''}</div>`;
+  u.cells.forEach((c,di)=>{
+    const s = c.s || "none";
+    html += `<button class="cell s-${s}" data-u="${ui}" data-d="${di}" id="c${ui}_${di}" aria-label="${esc(u.unit)} ${dlabel(D.days[di])}: ${esc(STATUS[s]?.label||"no activity")}" ${s==="none"?'tabindex="-1"':''}></button>`;
+  });
+});
+$("grid").innerHTML = html;
+$("legend").innerHTML = [["MATCHED","var(--ok-soft)"],["RATE","var(--info)"],["UNPOSTED","var(--warn)"],["HOURS_VARIANCE","var(--bad)"],["UNVERIFIED","repeating-linear-gradient(45deg,var(--line) 0 3px,var(--empty) 3px 6px)"],["IDLE_NO_USAGE","transparent;box-shadow:inset 0 0 0 1px var(--line)"]]
+  .map(([k,c])=>`<span><i style="background:${c}"></i>${k==="RATE"?"Auto-fixed (rate, duplicate)":k==="UNPOSTED"?"Fix after approval (unposted, wrong job)":k==="HOURS_VARIANCE"?"Held for review":STATUS[k].label}</span>`).join("");
+
+let pos = ND-1, selU = null, selD = null, timer = null;
+function statsAt(di){
+  const lim = D.days[di];
+  let checked=0, matched=0, auto=0, appr=0, hold=0, autoAmt=0, apprAmt=0, holdAmt=0;
+  D.units.forEach(u=>u.cells.forEach((c,i)=>{ if(i<=di && c.s){ checked++; if(c.s==="MATCHED") matched++; } }));
+  D.findings.forEach(f=>{ if(f.date>lim) return;
+    if(f.action==="auto"){auto++; autoAmt+=f.net_amount;} else if(f.action==="approve"){appr++; apprAmt+=f.net_amount;} else {hold++; holdAmt+=f.at_stake;} });
+  return {checked, matched, auto, appr, hold, autoAmt, apprAmt, holdAmt, corr:autoAmt+apprAmt};
+}
+function render(){
+  document.querySelectorAll(".cell").forEach(el=>{
+    const di=+el.dataset.d; el.classList.toggle("future", di>pos);
+    el.classList.toggle("sel", +el.dataset.u===selU && di===selD);
+  });
+  const s = statsAt(pos);
+  $("stats").innerHTML = [
+    ["Unit-days checked", s.checked, ""], ["Matched clean", s.matched, "k-ok"],
+    ["Auto-fixed", `${s.auto} · ${fmt(s.autoAmt)}`, "k-auto"], ["Fixed after approval", `${s.appr} · ${fmt(s.apprAmt)}`, "k-appr"],
+    ["Held for review", `${s.hold} · ${fmt(s.holdAmt)}`, "k-hold"], ["Net correction", fmt(s.corr), ""]
+  ].map(([k,v,c])=>`<div class="stat ${c}"><small>${k}</small><strong>${v}</strong></div>`).join("");
+  $("prog").textContent = `Through ${dlabel(D.days[pos])} · day ${pos+1} of ${ND}`;
+  $("play").textContent = timer ? "Pause" : (pos<ND-1 ? "Resume" : "Run reconciliation");
+  renderDetail();
+}
+function corrTable(rows){
+  return table([{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Hours",k:"hours",num:true,html:r=>r.hours.toFixed(2)},{h:"Rate",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Amount",k:"amount",num:true,html:r=>fmt(r.amount)},{h:"Memo",k:"memo"}], rows);
+}
+function renderDetail(){
+  if(selU===null){ $("detail").innerHTML = `<div class="sheet-head"><h3>Select a square</h3></div><p class="empty">Pick any colored square on the board to see what the telematics recorded, what was posted, and what the reconciliation did about it. Blue, amber and red squares carry a correction or a hold.</p>`; return; }
+  const u = D.units[selU], c = u.cells[selD], d = D.days[selD];
+  const st = STATUS[c.s] || {label:"No activity", pill:"p-mute"};
+  let h = `<div class="sheet-head"><h3>${esc(u.unit)} · ${dlabel(d)}</h3><span class="pill ${st.pill}">${esc(st.label)}</span></div>
+    <p class="muted" style="font-size:.86rem">${esc(u.desc)} · owned by Co ${u.em_co}${u.em_co===1?" (intercompany when used on a job)":""}</p>`;
+  if(selD>pos){ h += `<p class="empty">The reconciliation hasn't reached this day yet.</p>`; $("detail").innerHTML=h; return; }
+  h += c.tel ? `<dl class="kv"><dt>Telematics</dt><dd>${c.tel.hours.toFixed(1)} engine hrs · idle ${c.tel.idle}%</dd><dt>Location</dt><dd>${esc(c.tel.geofence)}${c.tel.job?` → job ${esc(c.tel.job)}`:" (not a job)"}</dd><dt>Hour meter</dt><dd>${c.tel.meter[0].toFixed(1)} → ${c.tel.meter[1].toFixed(1)}</dd></dl>`
+             : `<p class="empty">No telematics device on this unit.</p>`;
+  h += `<h3 style="font-size:.9rem">Posted usage</h3>` + (c.lines.length ? table([{h:"Trans",k:"trans",html:r=>`<span class="mono">${esc(r.trans)}</span>`},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Hrs",k:"hours",num:true,html:r=>r.hours.toFixed(1)},{h:"Rate",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Amount",k:"amount",num:true,html:r=>fmt(r.amount)}], c.lines) : `<p class="empty">Nothing posted from timecards.</p>`);
+  c.f.forEach(id=>{ const f=F[id], fs=STATUS[f.category];
+    h += `<div class="finding"><div class="sheet-head"><span class="mono">${esc(f.id)}</span><span class="pill ${fs.pill}">${esc(fs.label)}</span></div><p>${esc(f.detail)}</p><p class="why">${esc(fs.why||"")}</p>`;
+    h += f.corrections.length ? `<h3 style="font-size:.85rem">Correcting usage lines</h3>${corrTable(f.corrections)}` : `<p class="why"><strong>At stake if confirmed:</strong> ${fmt(f.at_stake)}. Nothing is posted until the superintendent answers.</p>`;
+    h += `</div>`; });
+  if(!c.f.length && st.why) h += `<p class="why">${esc(st.why)}</p>`;
+  $("detail").innerHTML = h;
+}
+function tick(){ if(pos>=ND-1){stop();return;} pos++; render(); timer=setTimeout(tick, +$("spd").value); }
+function stop(){ clearTimeout(timer); timer=null; render(); }
+$("play").onclick=()=>{ if(timer){stop();return;} if(pos>=ND-1){pos=-1;} timer=setTimeout(tick,0); render(); };
+$("step").onclick=()=>{ stop(); if(pos>=ND-1) pos=-1; pos++; render(); };
+$("reset").onclick=()=>{ stop(); pos=ND-1; render(); };
+$("grid").addEventListener("click",ev=>{const c=ev.target.closest(".cell"); if(!c||c.classList.contains("s-none")) return; selU=+c.dataset.u; selD=+c.dataset.d; render();});
+// open on an interesting square: the milling machine's missed days
+(function(){ const f=D.findings.find(x=>x.category==="UNPOSTED" && x.unit.startsWith("M-")) || D.findings[0];
+  selU=D.units.findIndex(u=>u.unit===f.unit); selD=D.days.indexOf(f.date); })();
+pos = -1; render(); pos = ND-1; render();
+
+/* ---------- Part 3 ---------- */
+const C = S.corrections_by_category;
+const moved = D.findings.filter(f=>f.category==="WRONG_JOB").reduce((a,f)=>a+f.corrections.filter(x=>x.amount>0).reduce((b,x)=>b+x.amount,0),0);
+const steps = [
+  ["Usage posted from timecards", S.posted_usage_total, null, `${S.posted_usage_lines} lines`],
+  ["Add usage telematics found, not posted", C.UNPOSTED.net, true, `${C.UNPOSTED.count} unit-days`],
+  ["Move usage to the job the machine was on", C.WRONG_JOB.net, true, `${C.WRONG_JOB.count} unit-days · ${fmt(moved)} moved`],
+  ["Reprice at the current rate table", C.RATE.net, true, `${C.RATE.count} lines`],
+  ["Reverse duplicate lines", C.DUPLICATE.net, true, `${C.DUPLICATE.count} lines`],
+];
+const maxAdj = Math.max(...steps.slice(1).map(s=>Math.abs(s[1])));
+$("bridge").innerHTML = `<table class="bridge"><thead><tr><th>Step</th><th class="num">Amount</th><th></th></tr></thead><tbody>` +
+  steps.map(([k,v,adj,n])=>`<tr><td>${esc(k)}<div class="why">${esc(n)}</div></td><td class="num">${adj&&v>0?"+":""}${fmt(v)}</td><td class="bar">${adj?`<i class="${v>0?'pos':v<0?'neg':'zero'}" style="width:${v?Math.max(3,Math.abs(v)/maxAdj*100):0}%"></i>`:""}</td></tr>`).join("") +
+  `<tr class="total"><td>Corrected equipment usage</td><td class="num">${fmt(S.corrected_usage_total)}</td><td></td></tr>` +
+  `<tr><td class="muted">Held for review, not booked<div class="why">${S.held_for_review.HOURS_VARIANCE.count} hours variances · ${S.held_for_review.NO_ACTIVITY.count} days in the yard</div></td><td class="num muted">${fmt(S.held_for_review.HOURS_VARIANCE.at_stake+S.held_for_review.NO_ACTIVITY.at_stake)}</td><td></td></tr></tbody></table>`;
+$("jobs").innerHTML = table([{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span><div class="why">${esc(r.desc)}</div>`},{h:"Before",k:"before",num:true,html:r=>fmt(r.before)},{h:"After",k:"after",num:true,html:r=>fmt(r.after)},{h:"Change",k:"change",num:true,html:r=>`${r.change>0?"+":""}${fmt(r.change)}`}], S.jobs,
+  `<tr class="total"><td>Total</td><td class="num">${fmt(S.posted_usage_total)}</td><td class="num">${fmt(S.corrected_usage_total)}</td><td class="num">+${fmt(S.correction_total)}</td></tr>`);
+const je = S.correcting_entry;
+$("je").innerHTML = table([{h:"Co",k:"co"},{h:"Account",k:"acct",html:r=>`<span class="mono">${esc(r.acct)}</span>`},{h:"Description",k:"desc"},{h:"Debit",num:true,html:r=>r.debit!=null?fmt(r.debit):""},{h:"Credit",num:true,html:r=>r.credit!=null?fmt(r.credit):""}], je,
+  `<tr class="total"><td colspan="3">Total</td><td class="num">${fmt(je.reduce((a,e)=>a+(e.debit||0),0))}</td><td class="num">${fmt(je.reduce((a,e)=>a+(e.credit||0),0))}</td></tr>`);
+const ck = S.tie_out_checks, allOk = Object.values(ck).every(Boolean);
+$("checks").innerHTML = Object.entries(ck).map(([k,v])=>`<li><span class="pill ${v?'p-ok':'p-bad'}">${v?"PASS":"FAIL"}</span>${esc(k.charAt(0).toUpperCase()+k.slice(1))}</li>`).join("");
+$("tie-pill").innerHTML = `<span class="pill ${allOk?'p-ok':'p-bad'}">${Object.values(ck).filter(Boolean).length} of ${Object.keys(ck).length} pass</span>`;
+const IR = D.import_rows, cols = Object.keys(IR[0]);
+$("imp").textContent = [cols.join(","), ...IR.slice(0,14).map(r=>cols.map(k=>r[k]).join(","))].join("\n") + `\n… ${IR.length} lines in all, ${fmt(S.correction_total)} net`;
+</script>

@@ -1,0 +1,135 @@
+{
+  "posting_month": "10/1/2026",
+  "fleet_units": 32,
+  "units_with_telematics": 29,
+  "telematics_unit_days": 638,
+  "posted_usage_lines": 458,
+  "telematics_job_site_hours": 3263.9,
+  "posted_hours_telematics_units": 3290.0,
+  "posted_usage_total": 395563.5,
+  "posted_by_em_company": {
+    "Copperhollow Materials Co.": 24605.0,
+    "Copperhollow Paving & Grading": 370958.5
+  },
+  "line_status": {
+    "MATCHED": 406,
+    "HOURS_VARIANCE": 5,
+    "RATE": 11,
+    "DUPLICATE": 3,
+    "WRONG_JOB": 6,
+    "NO_ACTIVITY": 3,
+    "UNVERIFIED": 24
+  },
+  "corrections_by_category": {
+    "UNPOSTED": {
+      "count": 8,
+      "net": 13301.5
+    },
+    "WRONG_JOB": {
+      "count": 6,
+      "net": 0.0
+    },
+    "RATE": {
+      "count": 11,
+      "net": 490.0
+    },
+    "DUPLICATE": {
+      "count": 3,
+      "net": -2218.5
+    }
+  },
+  "held_for_review": {
+    "HOURS_VARIANCE": {
+      "count": 5,
+      "at_stake": -1761.0
+    },
+    "NO_ACTIVITY": {
+      "count": 3,
+      "at_stake": -1584.0
+    }
+  },
+  "findings": 36,
+  "findings_auto": 14,
+  "findings_approved": 14,
+  "findings_held": 8,
+  "correction_lines": 45,
+  "correction_total": 11573.0,
+  "corrected_usage_total": 407136.5,
+  "correcting_entry": [
+    {
+      "co": 2,
+      "acct": "5410.",
+      "desc": "Job Cost - Equipment",
+      "debit": 11573.0
+    },
+    {
+      "co": 2,
+      "acct": "4610.",
+      "desc": "Equipment Revenue - Internal",
+      "credit": 11050.5
+    },
+    {
+      "co": 2,
+      "acct": "2450.",
+      "desc": "Due to Copperhollow Materials Co.",
+      "credit": 522.5
+    },
+    {
+      "co": 1,
+      "acct": "1450.",
+      "desc": "Due from Copperhollow Paving & Grading",
+      "debit": 522.5
+    },
+    {
+      "co": 1,
+      "acct": "4615.",
+      "desc": "Equipment Revenue - Intercompany",
+      "credit": 522.5
+    }
+  ],
+  "jobs": [
+    {
+      "job": "26-1104",
+      "desc": "Hwy 9 Mill & Overlay",
+      "before": 68501.0,
+      "after": 69149.0,
+      "change": 648.0
+    },
+    {
+      "job": "26-1112",
+      "desc": "Cedar Ridge Subdivision Ph 2",
+      "before": 50766.0,
+      "after": 50675.0,
+      "change": -91.0
+    },
+    {
+      "job": "26-1118",
+      "desc": "County Rd 41 Widening",
+      "before": 94715.0,
+      "after": 98504.5,
+      "change": 3789.5
+    },
+    {
+      "job": "26-1125",
+      "desc": "Riverside Commons Parking Lot",
+      "before": 84143.5,
+      "after": 93582.5,
+      "change": 9439.0
+    },
+    {
+      "job": "26-1131",
+      "desc": "Airport Taxiway C Rehab",
+      "before": 97438.0,
+      "after": 95225.5,
+      "change": -2212.5
+    }
+  ],
+  "tie_out_checks": {
+    "every posted usage line classified once": true,
+    "every telematics unit-day classified once": true,
+    "import total = sum of approved corrections": true,
+    "posted + corrections = corrected usage by job": true,
+    "correcting entry balances (Dr = Cr)": true,
+    "intercompany due-to = due-from": true
+  }
+}

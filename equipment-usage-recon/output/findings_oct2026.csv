@@ -1,0 +1,37 @@
+id,category,action,unit,date,posted_lines,net_amount,at_stake,detail
+F001,HOURS_VARIANCE,review,K-452,2026-10-01,EM-70002,0.0,-150.0,9.0 hrs posted vs 6.9 engine hrs (idle 16%)
+F002,UNPOSTED,approve,L-902,2026-10-12,,522.5,,5.5 engine hrs in GF-1118 (26-1118); nothing posted
+F003,UNPOSTED,approve,M-402,2026-10-06,,3485.0,,8.5 engine hrs in GF-1125 (26-1125); nothing posted
+F004,UNPOSTED,approve,M-402,2026-10-07,,3075.0,,7.4 engine hrs in GF-1125 (26-1125); nothing posted
+F005,UNPOSTED,approve,M-402,2026-10-08,,4100.0,,10.2 engine hrs in GF-1125 (26-1125); nothing posted
+F006,RATE,auto,P-201,2026-10-20,EM-70272,70.0,,Posted at $185.00/hr; rate table says $195.00 from 10/16/2026
+F007,RATE,auto,P-201,2026-10-21,EM-70294,65.0,,Posted at $185.00/hr; rate table says $195.00 from 10/16/2026
+F008,DUPLICATE,auto,P-202,2026-10-20,EM-70274,-1072.5,,Same 5.5 hrs on 26-1131 already posted as EM-70273
+F009,RATE,auto,P-203,2026-10-16,EM-70235,80.0,,Posted at $185.00/hr; rate table says $195.00 from 10/16/2026
+F010,RATE,auto,P-203,2026-10-19,EM-70253,75.0,,Posted at $185.00/hr; rate table says $195.00 from 10/16/2026
+F011,HOURS_VARIANCE,review,P-204,2026-10-01,EM-70009,0.0,-370.0,10.0 hrs posted vs 7.8 engine hrs (idle 17%)
+F012,RATE,auto,R-301,2026-10-19,EM-70255,24.0,,Posted at $68.00/hr; rate table says $72.00 from 10/16/2026
+F013,HOURS_VARIANCE,review,R-302,2026-10-13,EM-70176,0.0,-272.0,9.5 hrs posted vs 5.7 engine hrs (idle 25%)
+F014,RATE,auto,R-304,2026-10-19,EM-70257,28.0,,Posted at $68.00/hr; rate table says $72.00 from 10/16/2026
+F015,RATE,auto,R-305,2026-10-20,EM-70280,30.0,,Posted at $68.00/hr; rate table says $72.00 from 10/16/2026
+F016,WRONG_JOB,approve,R-305,2026-10-21,EM-70301,0.0,,Posted to 26-1131; telematics puts the unit in GF-1118 (26-1118)
+F017,WRONG_JOB,approve,R-305,2026-10-22,EM-70324,0.0,,Posted to 26-1131; telematics puts the unit in GF-1118 (26-1118)
+F018,WRONG_JOB,approve,R-305,2026-10-23,EM-70345,0.0,,Posted to 26-1131; telematics puts the unit in GF-1118 (26-1118)
+F019,UNPOSTED,approve,R-306,2026-10-20,,576.0,,7.8 engine hrs in GF-1104 (26-1104); nothing posted
+F020,RATE,auto,R-306,2026-10-21,EM-70302,24.0,,Posted at $68.00/hr; rate table says $72.00 from 10/16/2026
+F021,NO_ACTIVITY,review,R-308,2026-10-12,EM-70161,0.0,-544.0,"8.0 hrs posted to 26-1125, but unit sat in GF-YARD (1.0 engine hrs)"
+F022,RATE,auto,R-308,2026-10-16,EM-70239,24.0,,Posted at $68.00/hr; rate table says $72.00 from 10/16/2026
+F023,RATE,auto,R-308,2026-10-20,EM-70281,36.0,,Posted at $68.00/hr; rate table says $72.00 from 10/16/2026
+F024,RATE,auto,R-308,2026-10-23,EM-70347,34.0,,Posted at $68.00/hr; rate table says $72.00 from 10/16/2026
+F025,DUPLICATE,auto,S-501,2026-10-21,EM-70305,-408.0,,Same 8.5 hrs on 26-1104 already posted as EM-70304
+F026,UNPOSTED,approve,S-502,2026-10-12,,432.0,,8.9 engine hrs in GF-1104 (26-1104); nothing posted
+F027,NO_ACTIVITY,review,S-503,2026-10-27,EM-70388,0.0,-384.0,"8.0 hrs posted to 26-1104, but unit sat in GF-YARD (1.1 engine hrs)"
+F028,HOURS_VARIANCE,review,T-601,2026-10-12,EM-70163,0.0,-369.0,10.0 hrs posted vs 5.3 engine hrs (idle 25%)
+F029,WRONG_JOB,approve,T-602,2026-10-16,EM-70242,0.0,,Posted to 26-1112; telematics puts the unit in GF-1125 (26-1125)
+F030,UNPOSTED,approve,T-603,2026-10-22,,451.0,,5.3 engine hrs in GF-1112 (26-1112); nothing posted
+F031,NO_ACTIVITY,review,T-604,2026-10-07,EM-70108,0.0,-656.0,"8.0 hrs posted to 26-1112, but unit sat in GF-YARD (0.4 engine hrs)"
+F032,DUPLICATE,auto,T-605,2026-10-15,EM-70227,-738.0,,Same 9.0 hrs on 26-1118 already posted as EM-70226
+F033,WRONG_JOB,approve,X-551,2026-10-20,EM-70288,0.0,,Posted to 26-1125; telematics puts the unit in GF-1118 (26-1118)
+F034,WRONG_JOB,approve,X-551,2026-10-21,EM-70311,0.0,,Posted to 26-1125; telematics puts the unit in GF-1118 (26-1118)
+F035,HOURS_VARIANCE,review,X-552,2026-10-07,EM-70112,0.0,-600.0,11.0 hrs posted vs 5.8 engine hrs (idle 30%)
+F036,UNPOSTED,approve,X-552,2026-10-29,,660.0,,5.7 engine hrs in GF-1131 (26-1131); nothing posted

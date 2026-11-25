@@ -1,0 +1,11 @@
+category,description,rev_code,effective,rate,um
+PAV,Asphalt Paver,1,10/1/2026,185.0,HRS
+PAV,Asphalt Paver,1,10/16/2026,195.0,HRS
+ROL,Roller,1,10/1/2026,68.0,HRS
+ROL,Roller,1,10/16/2026,72.0,HRS
+MIL,Cold Planer (Milling),1,10/1/2026,410.0,HRS
+TKT,Tack Distributor Truck,1,10/1/2026,75.0,HRS
+SKD,Skid Steer,1,10/1/2026,48.0,HRS
+EXC,Excavator,1,10/1/2026,120.0,HRS
+DTK,Tandem Dump Truck,1,10/1/2026,82.0,HRS
+LDR,Wheel Loader,1,10/1/2026,95.0,HRS

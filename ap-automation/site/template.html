@@ -1,0 +1,273 @@
+<title>Copperhollow AP Integration</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: plant-office console. Setup sheets on top, a three-lane wire (provider → integration → ERP) with the call log beside a live AP batch panel. */
+:root{
+  --bg:#eceae4; --panel:#f8f7f3; --ink:#1d1f1c; --muted:#5f625b; --line:#cfccc2;
+  --asphalt:#2a2c29; --amber:#c97a00; --amber-soft:#f6e3bf;
+  --ok:#2f7a45; --ok-soft:#dcefe1; --warn:#a35d00; --warn-soft:#f8e6c8; --bad:#b0342a; --bad-soft:#f6dcd8;
+  --info:#2c5d8a; --info-soft:#dbe7f2;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#161816; --panel:#1f221f; --ink:#e8e6df; --muted:#a3a59c; --line:#353933;
+  --asphalt:#0e0f0e; --amber:#f0a32a; --amber-soft:#3b2c12;
+  --ok:#6cc48a; --ok-soft:#1d3324; --warn:#f0a32a; --warn-soft:#3b2c12; --bad:#ef7b6f; --bad-soft:#3d1f1b;
+  --info:#7fb2e0; --info-soft:#1b2b3a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#161816; --panel:#1f221f; --ink:#e8e6df; --muted:#a3a59c; --line:#353933;
+  --asphalt:#0e0f0e; --amber:#f0a32a; --amber-soft:#3b2c12;
+  --ok:#6cc48a; --ok-soft:#1d3324; --warn:#f0a32a; --warn-soft:#3b2c12; --bad:#ef7b6f; --bad-soft:#3d1f1b;
+  --info:#7fb2e0; --info-soft:#1b2b3a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:36px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,4.5vw,3rem);line-height:1.05}
+h2{font-size:1.65rem;line-height:1.1}
+h3{font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em}
+p{margin:0;max-width:68ch}
+.eyebrow{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;letter-spacing:.12em;color:var(--amber)}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+header{display:grid;gap:10px}
+.notice{font-size:.85rem;color:var(--muted);border-left:3px solid var(--amber);padding-left:10px}
+section{display:grid;gap:16px}
+section>*,.wrap>*,.side>*,.sheet>*{min-width:0}
+.sec-head{display:grid;gap:6px}
+
+/* Setup */
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{font:600 .85rem var(--body);background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.tab[aria-selected="true"]{background:var(--asphalt);color:#f4f2ea;border-color:var(--asphalt)}
+.tab:focus-visible,.btn:focus-visible,.call:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.tick{color:var(--ok);font-weight:700}
+.tab[aria-selected="true"] .tick{color:#8fdca6}
+.sheet{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;gap:12px}
+.sheet-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;align-items:baseline}
+.form-path{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.86rem}
+th{font:600 .72rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:left;border-bottom:1px solid var(--line);padding:6px 10px;white-space:nowrap}
+td{border-bottom:1px solid var(--line);padding:6px 10px;vertical-align:top}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+.pill{display:inline-block;font:500 .72rem var(--mono);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-ok{background:var(--ok-soft);color:var(--ok)} .p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)}
+.p-mute{background:var(--line);color:var(--ink)}
+.why{font-size:.85rem;color:var(--muted)}
+
+/* Wire */
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{font:600 .88rem var(--body);border:1px solid var(--asphalt);background:var(--asphalt);color:#f4f2ea;border-radius:4px;padding:8px 14px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:disabled{opacity:.45;cursor:default}
+.speed{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+.speed select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:4px 6px}
+.progress{font-family:var(--mono);font-size:.8rem;color:var(--muted);margin-left:auto}
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lane{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;display:grid;gap:2px;transition:border-color .2s,box-shadow .2s}
+.lane b{font-family:var(--display);font-size:1.1rem;letter-spacing:.02em}
+.lane span{font-size:.8rem;color:var(--muted)}
+.lane.on{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-soft)}
+.console{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.console{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.lanes{grid-template-columns:1fr}}
+.log{background:var(--panel);border:1px solid var(--line);border-radius:6px;max-height:560px;overflow:auto}
+.call{border:0;border-bottom:1px solid var(--line);border-left:3px solid transparent;display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:4px 10px;padding:8px 12px;cursor:pointer;width:100%;text-align:left;background:transparent;color:inherit;font:inherit}
+.call:hover{background:var(--bg)}
+.call.sel{border-left-color:var(--amber);background:var(--amber-soft)}
+.call.future{opacity:.35}
+.call .t{font-family:var(--mono);font-size:.75rem;color:var(--muted)}
+.call .m{font:600 .72rem var(--mono)}
+.call .path{font-family:var(--mono);font-size:.78rem;overflow-wrap:anywhere}
+.call .note{grid-column:1/-1;font-size:.83rem}
+.side{display:grid;gap:16px}
+.batch-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.stat{display:grid;gap:2px;min-width:0}
+@media (max-width:520px){.stat strong{font-size:1rem}.batch-stats{grid-template-columns:1fr 1fr}}
+.stat small{font:500 .7rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.stat strong{font-family:var(--mono);font-size:1.15rem;font-variant-numeric:tabular-nums}
+.batch-list{max-height:220px;overflow:auto}
+pre{margin:0;font-family:var(--mono);font-size:.76rem;line-height:1.45;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:10px;overflow:auto;max-height:260px;white-space:pre}
+.io{display:grid;gap:8px}
+.io h4{margin:0;font:600 .72rem var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tie{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center}
+footer{font-size:.82rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">AP automation · API integration demo</span>
+  <h1>Copperhollow AP Integration</h1>
+  <p>How vendor invoices for incoming rock, binder and hauling reach the ERP without anyone keying them. First the back-end setup the ERP needs, then a replay of one overnight run: tickets pulled from a third-party ticketing provider, invoices matched, and an AP batch built through the ERP's API.</p>
+  <p class="notice">Every company, vendor, account and amount on this page is fictional. The APIs are mock servers built for this portfolio; endpoint names are illustrative and do not belong to any real product.</p>
+</header>
+
+<section aria-labelledby="setup-h">
+  <div class="sec-head">
+    <span class="eyebrow">Part 1</span>
+    <h2 id="setup-h">ERP back-end setup</h2>
+    <p class="muted">Everything below is configured once, before the integration is allowed to touch AP. Each sheet says why it matters.</p>
+  </div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="sheet" class="sheet" role="tabpanel"></div>
+</section>
+
+<section aria-labelledby="run-h">
+  <div class="sec-head">
+    <span class="eyebrow">Part 2</span>
+    <h2 id="run-h">Overnight run, replayed</h2>
+    <p class="muted">Every request and response the integration made, in order. Press Replay to watch the batch fill, or select any call to see its payload.</p>
+  </div>
+  <div class="controls">
+    <button class="btn" id="play">Replay run</button>
+    <button class="btn ghost" id="step">Step</button>
+    <button class="btn ghost" id="reset">Show final state</button>
+    <label class="speed" for="spd">Speed
+      <select id="spd"><option value="900">Slow</option><option value="450" selected>Normal</option><option value="150">Fast</option></select>
+    </label>
+    <span class="progress" id="prog"></span>
+  </div>
+  <div class="lanes" aria-hidden="true">
+    <div class="lane" id="lane-tp"><b>Ticketing provider</b><span>Third party · scale tickets</span></div>
+    <div class="lane" id="lane-int"><b>Integration service</b><span>Staging · mapping · matching</span></div>
+    <div class="lane" id="lane-erp"><b>ERP</b><span>AP batch · validate · post</span></div>
+  </div>
+  <div class="console">
+    <div class="log" id="log" role="list" aria-label="API calls"></div>
+    <div class="side">
+      <div class="sheet">
+        <div class="sheet-head"><h3>AP batch <span class="mono" id="b-id">—</span></h3><span id="b-status"></span></div>
+        <div class="batch-stats">
+          <div class="stat"><small>Invoices</small><strong id="b-inv">0</strong></div>
+          <div class="stat"><small>Lines</small><strong id="b-lines">0</strong></div>
+          <div class="stat"><small>Total</small><strong id="b-total">$0.00</strong></div>
+        </div>
+        <div class="batch-list tbl-wrap"><table><thead><tr><th>Seq</th><th>Vendor</th><th>Invoice</th><th class="num">Amount</th></tr></thead><tbody id="b-rows"></tbody></table></div>
+      </div>
+      <div class="sheet io">
+        <div class="sheet-head"><h3>Selected call</h3><span id="sel-status"></span></div>
+        <div class="mono" id="sel-path" style="font-size:.8rem;overflow-wrap:anywhere"></div>
+        <h4>Request</h4><pre id="sel-req"></pre>
+        <h4>Response</h4><pre id="sel-resp"></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section aria-labelledby="tie-h">
+  <div class="sec-head"><span class="eyebrow">Part 3</span><h2 id="tie-h">Tie-out</h2></div>
+  <div class="sheet"><div class="tie" id="tie"></div>
+  <p class="why">The run is only trusted when the ERP's batch matches what the integration approved, to the cent and to the invoice. Held invoices stay in the exception queue for AP with a reason attached.</p></div>
+</section>
+
+<footer>Built from <span class="mono">scripts/api_demo.py</span> and <span class="mono">scripts/mock_servers.py</span>. Rerun them and this page rebuilds from the new log.</footer>
+</div>
+
+<script>
+const LOG = /*__LOG__*/[];
+const SETUP = /*__SETUP__*/{};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = n => "$" + Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+/* ---------- Part 1: setup sheets ---------- */
+function table(cols, rows){
+  return `<div class="tbl-wrap"><table><thead><tr>${cols.map(c=>`<th class="${c.num?'num':''}">${esc(c.h)}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.num?'num':''}">${c.html?c.html(r):esc(r[c.k])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+const yes = v => v ? '<span class="pill p-ok">Allowed</span>' : '<span class="pill p-bad">Denied</span>';
+const SHEETS = [
+  {id:"users", label:"Integration users", path:"Security › Users & roles", why:"The integration can build and validate batches but cannot post them. A person reviews and posts, so no money moves without a human.",
+   body:()=>table([{h:"Login",k:"login",html:r=>`<span class="mono">${esc(r.login)}</span>`},{h:"Role",k:"role"},{h:"Create batch",html:r=>yes(r.create)},{h:"Add invoices",html:r=>yes(r.add)},{h:"Validate",html:r=>yes(r.validate)},{h:"Post",html:r=>yes(r.post)}], SETUP.users)},
+  {id:"vendors", label:"Vendor master", path:"AP › Vendor Master", why:"Each vendor the ERP will receive invoices from must exist with terms set. An unknown vendor number is rejected by the API with \"Vendor invalid!\".",
+   body:()=>table([{h:"Vendor #",k:"vendor",num:true},{h:"Name",k:"name"},{h:"Type",k:"kind"},{h:"Terms",html:r=>`Net ${r.terms_days}`},{h:"Pay method",k:"pay"}], SETUP.vendors)},
+  {id:"gl", label:"GL accounts", path:"GL › Chart of Accounts", why:"Invoice lines hit the AP Accrued clearing account, the same account the scale tickets credited. What's left after invoices clear is the price variance.",
+   body:()=>table([{h:"Account",k:"acct",html:r=>`<span class="mono">${esc(r.acct)}</span>`},{h:"Description",k:"desc"},{h:"Used for",k:"use"}], SETUP.gl)},
+  {id:"map", label:"Ticket code map", path:"Integration › Cross-reference", why:"The ticketing provider uses its own product, pit and carrier codes. This map turns them into ERP materials and vendors. Anything unmapped is held, never guessed.",
+   body:()=>table([{h:"Provider field",k:"field"},{h:"Provider code",k:"code",html:r=>`<span class="mono">${esc(r.code)}</span>`},{h:"ERP value",k:"erp"},{h:"Meaning",k:"desc"}], SETUP.codemap)},
+  {id:"materials", label:"Material prices", path:"Materials › Price List", why:"The price in the system when a truck is weighed drives the accrual. When a supplier invoices above it, the matching step flags the line for buyer approval.",
+   body:()=>table([{h:"Material",k:"material",html:r=>`<span class="mono">${esc(r.material)}</span>`},{h:"Description",k:"desc"},{h:"Supplier",k:"supplier"},{h:"System price / ton",k:"price",num:true,html:r=>fmt(r.price)}], SETUP.materials)},
+  {id:"api", label:"API & batch settings", path:"Integration › Connection", why:"Connection details and the rules both sides agreed on. Secrets live in a vault; this page shows only names.",
+   body:()=>table([{h:"Setting",k:"k"},{h:"Value",k:"v",html:r=>`<span class="mono">${esc(r.v)}</span>`}], SETUP.api)},
+];
+let curSheet = "users";
+function renderTabs(){
+  $("tabs").innerHTML = SHEETS.map(s=>`<button class="tab" role="tab" id="tab-${s.id}" aria-selected="${s.id===curSheet}" data-id="${s.id}"><span class="tick" aria-label="configured">✓</span>${esc(s.label)}</button>`).join("");
+  const s = SHEETS.find(x=>x.id===curSheet);
+  $("sheet").innerHTML = `<div class="sheet-head"><h3>${esc(s.label)}</h3><span class="form-path">${esc(s.path)}</span></div>${s.body()}<p class="why">${esc(s.why)}</p>`;
+}
+$("tabs").addEventListener("click", e=>{const b=e.target.closest(".tab"); if(b){curSheet=b.dataset.id; renderTabs();}});
+renderTabs();
+
+/* ---------- Part 2: replay ---------- */
+const laneOf = e => e.path.startsWith("/tickettrail") ? "lane-tp" : e.method==="LOCAL" ? "lane-int" : "lane-erp";
+function statusPill(e){
+  const s=e.status, cls = s>=500?"p-bad": s===403||s===409||s===422?"p-warn": s>=400?"p-bad":"p-ok";
+  return `<span class="pill ${cls}">${e.method==="LOCAL"?"done":s}</span>`;
+}
+$("log").innerHTML = LOG.map((e,i)=>`<button class="call" role="listitem" data-i="${i}" id="c${i}">
+  <span class="t">${esc(e.t.slice(11,19))}</span>
+  <span class="m">${esc(e.method==="LOCAL"?"STEP":e.method)} ${statusPill(e)}</span>
+  <span class="path">${esc(e.path)}</span>
+  <span class="note">${esc(e.note)}</span></button>`).join("");
+
+let pos = LOG.length-1, sel = LOG.length-1, timer = null;
+function batchAt(i){
+  const b={id:null,status:null,rows:[],lines:0,total:0};
+  for(let k=0;k<=i;k++){
+    const e=LOG[k];
+    if(e.path==="/erp/v1/ap/batches" && e.status===201){b.id=e.response.batch_id;b.status="open";}
+    if(/\/invoices$/.test(e.path) && e.status===201){
+      const h=e.request.header; const n=e.response.lines;
+      b.rows.push({seq:e.response.batch_seq,vendor:h.vendor,name:(SETUP.vendors.find(v=>v.vendor===h.vendor)||{}).name||h.vendor,inv:h.ap_ref,amt:h.gross_amt});
+      b.lines+=n; b.total+=h.gross_amt;
+    }
+    if(/\/validate$/.test(e.path) && e.status===200) b.status="validated";
+    if(/\/post$/.test(e.path) && e.status===200) b.status="posted";
+  }
+  return b;
+}
+function render(){
+  document.querySelectorAll(".call").forEach((el,i)=>{el.classList.toggle("future",i>pos);el.classList.toggle("sel",i===sel);});
+  ["lane-tp","lane-int","lane-erp"].forEach(id=>$(id).classList.toggle("on", LOG[pos] && laneOf(LOG[pos])===id && timer!==null));
+  const b=batchAt(pos);
+  $("b-id").textContent=b.id??"—";
+  $("b-status").innerHTML=b.status?`<span class="pill ${b.status==="posted"?"p-ok":b.status==="validated"?"p-info":"p-warn"}">${b.status}</span>`:'<span class="pill p-mute">not opened</span>';
+  $("b-inv").textContent=b.rows.length; $("b-lines").textContent=b.lines; $("b-total").textContent=fmt(b.total);
+  $("b-rows").innerHTML=b.rows.slice().reverse().map(r=>`<tr><td class="num">${r.seq}</td><td>${esc(r.name)}</td><td class="mono">${esc(r.inv)}</td><td class="num">${fmt(r.amt)}</td></tr>`).join("") || '<tr><td colspan="4" class="muted">No invoices yet.</td></tr>';
+  const e=LOG[sel];
+  $("sel-status").innerHTML=statusPill(e);
+  $("sel-path").textContent=`${e.method==="LOCAL"?"STEP":e.method} ${e.path}`;
+  $("sel-req").textContent=e.request==null?"(no request body)":JSON.stringify(e.request,null,2);
+  $("sel-resp").textContent=JSON.stringify(e.response,null,2);
+  $("prog").textContent=`${pos+1} / ${LOG.length} calls`;
+  $("play").textContent = timer ? "Pause" : (pos<LOG.length-1 ? "Resume" : "Replay run");
+}
+function scrollTo(i){const el=$("c"+i), box=$("log"); if(el) box.scrollTop = el.offsetTop - box.clientHeight/2;}
+function tick(){ if(pos>=LOG.length-1){stop();return;} pos++; sel=pos; render(); scrollTo(pos); timer=setTimeout(tick, +$("spd").value); }
+function stop(){ clearTimeout(timer); timer=null; render(); }
+$("play").onclick=()=>{ if(timer){stop();return;} if(pos>=LOG.length-1){pos=-1;} timer=setTimeout(tick,0); render(); };
+$("step").onclick=()=>{ stop(); if(pos>=LOG.length-1) pos=-1; pos++; sel=pos; render(); scrollTo(pos); };
+$("reset").onclick=()=>{ stop(); pos=LOG.length-1; sel=pos; render(); };
+$("log").addEventListener("click",ev=>{const c=ev.target.closest(".call"); if(c){sel=+c.dataset.i; if(sel>pos){stop();pos=sel;} render();}});
+render(); scrollTo(pos);
+
+/* ---------- Part 3: tie-out ---------- */
+const tie = LOG.find(e=>e.step==="Tie-out").response;
+const stage = LOG.find(e=>e.step==="Staging").response;
+const match = LOG.find(e=>e.step==="Matching").response;
+$("tie").innerHTML = [
+  ["Tickets received", stage.received], ["Tickets staged", stage.staged], ["Tickets held", stage.held.length],
+  ["Invoices approved", tie.approved_invoices], ["Invoices held", (match.held||[]).length],
+  ["ERP batch total", fmt(tie.erp_batch_total)], ["Approved total", fmt(tie.approved_total)]
+].map(([k,v])=>`<div class="stat"><small>${k}</small><strong>${v}</strong></div>`).join("") +
+  `<span class="pill ${tie.tie_out==="PASS"?"p-ok":"p-bad"}" style="font-size:.9rem;padding:4px 12px">Tie-out ${tie.tie_out}</span>`;
+</script>

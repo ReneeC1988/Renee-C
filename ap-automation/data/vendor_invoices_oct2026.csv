@@ -1,0 +1,26 @@
+invoice,vendor,vendor_name,invoice_date,kind,total,line_count
+020-4052,41020,Granite Bend Quarry,2026-10-05,matl,4047.7,13
+020-4180,41020,Granite Bend Quarry,2026-10-12,matl,9814.42,31
+020-4221,41020,Granite Bend Quarry,2026-10-19,matl,8544.46,29
+020-4334,41020,Granite Bend Quarry,2026-10-26,matl,9873.99,34
+020-4444,41020,Granite Bend Quarry,2026-11-02,matl,7904.1,26
+035-4033,41035,Blue Mesa Aggregates,2026-10-05,matl,6248.63,20
+035-4120,41035,Blue Mesa Aggregates,2026-10-12,matl,9993.62,31
+035-4268,41035,Blue Mesa Aggregates,2026-10-19,matl,12709.07,39
+035-4332,41035,Blue Mesa Aggregates,2026-10-26,matl,12909.03,40
+035-4438,41035,Blue Mesa Aggregates,2026-11-02,matl,13244.63,41
+210-4038,41210,Redline Hauling LLC,2026-10-05,haul,1611.44,10
+210-4149,41210,Redline Hauling LLC,2026-10-12,haul,4708.54,30
+210-4289,41210,Redline Hauling LLC,2026-10-19,haul,3960.34,25
+210-4362,41210,Redline Hauling LLC,2026-10-26,haul,6451.7,41
+210-4469,41210,Redline Hauling LLC,2026-11-02,haul,5362.45,34
+225-4068,41225,Two Rivers Trucking,2026-10-05,haul,3985.3,23
+225-4115,41225,Two Rivers Trucking,2026-10-12,haul,5489.1,32
+225-4245,41225,Two Rivers Trucking,2026-10-19,haul,7451.88,43
+225-4347,41225,Two Rivers Trucking,2026-10-26,haul,5514.8,32
+225-4498,41225,Two Rivers Trucking,2026-11-02,haul,5639.43,33
+300-4021,41300,Cascade Bitumen Supply,2026-10-05,matl,190875.1,12
+300-4190,41300,Cascade Bitumen Supply,2026-10-12,matl,311557.5,20
+300-4215,41300,Cascade Bitumen Supply,2026-10-19,matl,204362.2,13
+300-4345,41300,Cascade Bitumen Supply,2026-10-26,matl,374296.0,24
+300-4469,41300,Cascade Bitumen Supply,2026-11-02,matl,262958.8,17

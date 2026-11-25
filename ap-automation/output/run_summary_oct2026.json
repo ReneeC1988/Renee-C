@@ -1,0 +1,24 @@
+{
+  "posting_month": "10/1/2026",
+  "scale_tickets": 389,
+  "accrued_at_scale": 1485648.22,
+  "invoices_received": 25,
+  "invoices_auto_import": 17,
+  "invoices_price_variance": 5,
+  "invoices_on_hold": 3,
+  "imported_total": 1465778.12,
+  "accrual_cleared": 1462173.08,
+  "price_variance_total": 3605.04,
+  "variance_by_category": {
+    "Incoming Rock": 3605.04,
+    "Material Hauling": 0.0,
+    "Liquid Asphalt": 0.0
+  },
+  "accrual_remaining_open": 23475.14,
+  "exception_lines": 174,
+  "tie_out_checks": {
+    "import lines = import headers": true,
+    "import headers = approved invoice totals": true,
+    "every invoice is imported or held": true
+  }
+}

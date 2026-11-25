@@ -1,0 +1,33 @@
+unit,em_co,category,description,telematics
+P-201,2,PAV,Asphalt Paver,Y
+P-202,2,PAV,Asphalt Paver,Y
+P-203,2,PAV,Asphalt Paver,Y
+P-204,2,PAV,Asphalt Paver,Y
+R-301,2,ROL,Roller,Y
+R-302,2,ROL,Roller,Y
+R-303,2,ROL,Roller,Y
+R-304,2,ROL,Roller,Y
+R-305,2,ROL,Roller,Y
+R-306,2,ROL,Roller,Y
+R-307,2,ROL,Roller,Y
+R-308,2,ROL,Roller,Y
+M-401,2,MIL,Cold Planer (Milling),Y
+M-402,2,MIL,Cold Planer (Milling),Y
+K-451,2,TKT,Tack Distributor Truck,Y
+K-452,2,TKT,Tack Distributor Truck,Y
+S-501,2,SKD,Skid Steer,Y
+S-502,2,SKD,Skid Steer,Y
+S-503,2,SKD,Skid Steer,Y
+S-504,2,SKD,Skid Steer,N
+X-551,2,EXC,Excavator,Y
+X-552,2,EXC,Excavator,Y
+T-601,2,DTK,Tandem Dump Truck,Y
+T-602,2,DTK,Tandem Dump Truck,Y
+T-603,2,DTK,Tandem Dump Truck,Y
+T-604,2,DTK,Tandem Dump Truck,Y
+T-605,2,DTK,Tandem Dump Truck,Y
+T-606,2,DTK,Tandem Dump Truck,Y
+T-607,2,DTK,Tandem Dump Truck,N
+T-608,2,DTK,Tandem Dump Truck,N
+L-901,1,LDR,Wheel Loader,Y
+L-902,1,LDR,Wheel Loader,Y

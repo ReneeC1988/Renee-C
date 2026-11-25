@@ -1,0 +1,228 @@
+{
+  "posting_month": "10/1/2026",
+  "fleet_units": 32,
+  "units_with_telematics": 29,
+  "telematics_unit_days": 638,
+  "heavyjob": {
+    "rows": 492,
+    "timecards": 327,
+    "exported_rows": 490,
+    "failed_rows": 2,
+    "failed_timecards": [
+      "HJ-1023-18-1125"
+    ],
+    "failed_equip_hours": 13.0,
+    "failed_labor_hours": 14.5
+  },
+  "payroll": {
+    "timecard_lines": 490,
+    "lines_with_equipment": 478,
+    "lines_equipment_blank": 12,
+    "pr_batches": [
+      "PR1-1009",
+      "PR1-1016",
+      "PR1-1023",
+      "PR1-1030",
+      "PR2-1002",
+      "PR2-1009",
+      "PR2-1016",
+      "PR2-1023",
+      "PR2-1030"
+    ],
+    "equipment_hours": 3654.0,
+    "equipment_dollars": 407147.5,
+    "labor_reclass_lines": 8,
+    "labor_reclass_hours": 74.0
+  },
+  "posted_usage_lines": 478,
+  "telematics_job_site_hours": 3350.0,
+  "posted_hours_telematics_units": 3339.5,
+  "posted_usage_total": 407147.5,
+  "posted_by_em_company": {
+    "Copperhollow Materials Co.": 20330.0,
+    "Copperhollow Paving & Grading": 386817.5
+  },
+  "posted_intercompany": {
+    "Co 1 units on Co 2 jobs": 13822.5,
+    "Co 2 units on Co 1 jobs": 14406.0
+  },
+  "line_status": {
+    "MATCHED": 407,
+    "HOURS_VARIANCE": 5,
+    "RATE": 11,
+    "DUPLICATE": 3,
+    "WRONG_JOB": 8,
+    "NO_ACTIVITY": 3,
+    "UNVERIFIED": 41
+  },
+  "corrections_by_category": {
+    "NOT_TRANSFERRED": {
+      "count": 2,
+      "net": 1815.0
+    },
+    "UNPOSTED": {
+      "count": 12,
+      "net": 15600.0
+    },
+    "HOURS_VARIANCE": {
+      "count": 5,
+      "net": -1780.0
+    },
+    "WRONG_JOB": {
+      "count": 8,
+      "net": 0.0
+    },
+    "RATE": {
+      "count": 11,
+      "net": 490.0
+    },
+    "DUPLICATE": {
+      "count": 3,
+      "net": -2098.5
+    }
+  },
+  "held_for_review": {
+    "NO_ACTIVITY": {
+      "count": 3,
+      "at_stake": -1776.0
+    }
+  },
+  "findings": 44,
+  "findings_auto": 16,
+  "findings_approved": 25,
+  "findings_held": 3,
+  "correction_lines": 65,
+  "correction_total": 14026.5,
+  "corrected_usage_total": 421174.0,
+  "intercompany_corrections": {
+    "materials_units_on_paving_jobs": 1377.5,
+    "paving_units_on_materials_jobs": 2175.0,
+    "due_from_paving_on_materials_books": 1377.5,
+    "due_to_materials_on_paving_books": 1377.5,
+    "due_from_materials_on_paving_books": 2175.0,
+    "due_to_paving_on_materials_books": 2175.0
+  },
+  "correcting_entry": [
+    {
+      "co": 2,
+      "acct": "1450.",
+      "desc": "Due from Copperhollow Materials",
+      "debit": 2175.0
+    },
+    {
+      "co": 2,
+      "acct": "2450.",
+      "desc": "Due to Copperhollow Materials",
+      "credit": 1377.5
+    },
+    {
+      "co": 2,
+      "acct": "4610.",
+      "desc": "Equipment Revenue - Internal",
+      "credit": 9761.5
+    },
+    {
+      "co": 2,
+      "acct": "4615.",
+      "desc": "Equipment Revenue - Intercompany",
+      "credit": 2175.0
+    },
+    {
+      "co": 2,
+      "acct": "5410.",
+      "desc": "Job Cost - Equipment",
+      "debit": 11139.0
+    },
+    {
+      "co": 1,
+      "acct": "1450.",
+      "desc": "Due from Copperhollow Paving",
+      "debit": 1377.5
+    },
+    {
+      "co": 1,
+      "acct": "2450.",
+      "desc": "Due to Copperhollow Paving",
+      "credit": 2175.0
+    },
+    {
+      "co": 1,
+      "acct": "4610.",
+      "desc": "Equipment Revenue - Internal",
+      "credit": 712.5
+    },
+    {
+      "co": 1,
+      "acct": "4615.",
+      "desc": "Equipment Revenue - Intercompany",
+      "credit": 1377.5
+    },
+    {
+      "co": 1,
+      "acct": "5410.",
+      "desc": "Job Cost - Equipment",
+      "debit": 2887.5
+    }
+  ],
+  "jobs": [
+    {
+      "job": "26-1104",
+      "jc_co": 2,
+      "desc": "Hwy 9 Mill & Overlay",
+      "before": 71829.5,
+      "after": 72590.0,
+      "change": 760.5
+    },
+    {
+      "job": "26-1112",
+      "jc_co": 2,
+      "desc": "Cedar Ridge Subdivision Ph 2",
+      "before": 55371.0,
+      "after": 58061.0,
+      "change": 2690.0
+    },
+    {
+      "job": "26-1118",
+      "jc_co": 2,
+      "desc": "County Rd 41 Widening",
+      "before": 86366.5,
+      "after": 85552.5,
+      "change": -814.0
+    },
+    {
+      "job": "26-1125",
+      "jc_co": 2,
+      "desc": "Riverside Commons Parking Lot",
+      "before": 80810.5,
+      "after": 92120.5,
+      "change": 11310.0
+    },
+    {
+      "job": "26-1131",
+      "jc_co": 2,
+      "desc": "Airport Taxiway C Rehab",
+      "before": 91856.5,
+      "after": 89049.0,
+      "change": -2807.5
+    },
+    {
+      "job": "26-9010",
+      "jc_co": 1,
+      "desc": "Plant 1 Stockpile & Yard Work",
+      "before": 20913.5,
+      "after": 23801.0,
+      "change": 2887.5
+    }
+  ],
+  "tie_out_checks": {
+    "HeavyJob exported timecards = ERP payroll timecards (rows and hours)": true,
+    "every failed HeavyJob export is caught and corrected": true,
+    "PR timecard equipment hours and dollars = EM usage posted": true,
+    "every posted usage line classified once": true,
+    "every telematics unit-day classified once": true,
+    "import total = sum of approved corrections": true,
+    "posted + corrections = corrected usage by job": true,
+    "correcting entry balances (Dr = Cr)": true,
+    "intercompany due-to = due-from, both directions": true
+  }
+}

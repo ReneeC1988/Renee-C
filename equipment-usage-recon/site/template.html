@@ -91,7 +91,7 @@ tr.total td{font-weight:600;border-top:2px solid var(--ink)}
 .cell.future{background:var(--empty)!important;cursor:default}
 .cell.sel{outline:2px solid var(--ink);outline-offset:1px}
 .s-MATCHED{background:var(--ok-soft)}
-.s-RATE,.s-DUPLICATE{background:var(--info)}
+.s-RATE,.s-DUPLICATE,.s-NOT_TRANSFERRED{background:var(--info)}
 .s-UNPOSTED,.s-WRONG_JOB,.s-HOURS_VARIANCE{background:var(--warn)}
 .s-NO_ACTIVITY{background:var(--bad)}
 .s-UNVERIFIED{background:repeating-linear-gradient(45deg,var(--line) 0 3px,var(--empty) 3px 6px)}
@@ -124,7 +124,7 @@ footer{font-size:.82rem;color:var(--muted)}
 <header>
   <span class="eyebrow">Equipment usage reconciliation · Month-end</span>
   <h1>Copperhollow Equipment Usage Rec</h1>
-  <p>Equipment usage is posted with payroll: foremen put each machine and its hours on the crew timecard, and the payroll update charges the job at an hourly rate and credits equipment revenue to the company that owns the machine. Usage should be billed on the hours the machine was actually used. This page checks one month of those charges against the machines' telematics, corrects what's wrong through an EM usage batch, sends labor follow-ups to payroll, and ties everything out across both companies.</p>
+  <p>Crews enter their hours in the field in HeavyJob, and approved timecards flow into ERP payroll. Equipment usage is posted with payroll: each machine and its hours ride on the crew timecard, and the payroll update charges the job at an hourly rate and credits equipment revenue to the company that owns the machine. Usage should be billed on the hours the machine was actually used. This page checks one month of those charges against the machines' telematics, corrects what's wrong through an EM usage batch, sends labor follow-ups to payroll, and ties everything out across both companies.</p>
   <p class="notice">Every company, job, unit, account and amount on this page is fictional. The ERP and telematics feeds are simulated; field and form names are illustrative.</p>
 </header>
 
@@ -184,9 +184,12 @@ footer{font-size:.82rem;color:var(--muted)}
 </section>
 
 <section aria-labelledby="pr-h">
-  <div class="sheet"><div class="sheet-head"><h3 id="pr-h">Payroll follow-up: operator labor to reclass</h3><span class="form-path">JC labor cost transfer · no paycheck change</span></div>
+  <div class="sheet"><div class="sheet-head"><h3 id="pr-h">Payroll follow-up</h3><span class="form-path">JC labor cost transfer · no paycheck change</span></div>
+    <h3 style="font-size:.9rem">Unpaid: approved in HeavyJob, missing from payroll</h3>
+    <div class="tbl-wrap" id="missing"></div>
+    <h3 style="font-size:.9rem">Operator labor to reclass to the right job</h3>
     <div class="tbl-wrap" id="reclass"></div>
-    <p class="why">When the machine was on a different job, its operator usually was too. These lines go to payroll as a job cost transfer; gross pay doesn't change. Cross-company lines also need the intercompany labor entry.</p></div>
+    <p class="why">Missing time is paid on the next payroll and the export error is fixed in HeavyJob. When a machine was on a different job, its operator usually was too, so those hours go to payroll as a job cost transfer; gross pay doesn't change. Cross-company lines also need the intercompany labor entry.</p></div>
 </section>
 
 <footer>Built from <span class="mono">scripts/em_usage_recon.py</span> by <span class="mono">scripts/build_site.py</span>. Rerun them and this page rebuilds from the new data.</footer>
@@ -203,6 +206,7 @@ const dlabel = iso => { const d = new Date(iso+"T12:00:00"); return `${d.getMont
 const STATUS = {
   MATCHED:{label:"Matched", pill:"p-ok", kind:"ok"},
   RATE:{label:"Wrong rate · auto-fix", pill:"p-info", kind:"auto", why:"The rate table changed on 10/16 but this crew's timecard still carried the old rate. Objective, so it is fixed without review."},
+  NOT_TRANSFERRED:{label:"Stuck in HeavyJob · auto-fix", pill:"p-info", kind:"auto", why:"The foreman's HeavyJob timecard was approved, but the export to payroll failed, so neither the operator's labor nor the machine's hours reached the ERP. The approved hours are posted as usage, and payroll is told the operator is unpaid for the day."},
   DUPLICATE:{label:"Duplicate · auto-fix", pill:"p-info", kind:"auto", why:"The same timecard line was keyed twice. The extra copy is reversed."},
   UNPOSTED:{label:"Not posted · approve", pill:"p-warn", kind:"appr", why:"The machine ran inside a job's geofence and its operator is on the timecard, but the equipment column was left blank, so payroll posted no usage. The job is under-costed and the owner is missing revenue."},
   WRONG_JOB:{label:"Wrong job · approve", pill:"p-warn", kind:"appr", why:"Payroll charged the usage to the crew's job, but the machine was working on a different one. Equipment cost moves to the right job, and the operator's labor goes on the reclass list for payroll. If the two jobs belong to different companies, intercompany moves too."},
@@ -223,6 +227,8 @@ const SHEETS = [
    body:()=>table([{h:"Unit",k:"unit",html:r=>`<span class="mono">${esc(r.unit)}</span>`},{h:"Description",k:"desc"},{h:"Category",k:"category"},{h:"Owning company",html:r=>`${r.co} · ${esc(r.owner)}`},{h:"Telematics",html:r=>r.telematics?'<span class="pill p-ok">Fitted</span>':'<span class="pill p-mute">None</span>'}], T.equipment)},
   {id:"rates", label:"Revenue rates", path:"EM › Revenue Rates by Category", why:"Pavers and rollers went up on 10/16. Usage is priced at the rate in effect on the day the machine worked, so any timecard still carrying the old rate after that date is wrong.",
    body:()=>table([{h:"Category",k:"category"},{h:"Description",k:"desc"},{h:"Rev code",k:"rev_code"},{h:"Effective",k:"eff",html:r=>`<span class="mono">${esc(r.eff)}</span>`},{h:"Rate / hr",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Job phase",k:"phase"}], T.rates)},
+  {id:"hj", label:"HeavyJob to payroll", path:"HeavyJob (HCSS) › Payroll export", why:"HeavyJob is where hours are born. If an approved timecard doesn't make it across, the job, equipment revenue and the operator's paycheck are all short, so the rec ties the two systems row by row before it looks at anything else.",
+   body:()=>table([{h:"Setting",k:"k"},{h:"Value",k:"v"}], T.heavyjob)},
   {id:"payroll", label:"Payroll timecards", path:"PR › Timecard Entry › Equipment columns", why:"Usage enters the ERP through payroll, so payroll is where most errors start: a blank equipment column, shift hours keyed as machine hours, or the crew's job instead of the machine's. The rec ties every usage line back to its timecard line.",
    body:()=>table([{h:"Setting",k:"k"},{h:"Value",k:"v"}], T.payroll)},
   {id:"jobs", label:"Job geofences", path:"Telematics › Geofences ↔ JC Jobs", why:"Each job site is drawn as a geofence in the telematics portal and mapped to its job number and company. The materials company's plant work is a job too, so paving-company trucks working there create intercompany charges. The yard maps to no job.",
@@ -232,7 +238,7 @@ const SHEETS = [
   {id:"rules", label:"Match rules", path:"Integration › Settings", why:"Agreed with operations before go-live. Objective errors are fixed automatically; anything that needs field knowledge goes to a person.",
    body:()=>table([{h:"Rule",k:"k"},{h:"Setting",k:"v"}], T.rules)},
 ];
-let curSheet = "payroll";
+let curSheet = "hj";
 function renderTabs(){
   $("tabs").innerHTML = SHEETS.map(s=>`<button class="tab" role="tab" aria-selected="${s.id===curSheet}" data-id="${s.id}"><span class="tick" aria-hidden="true">✓</span>${esc(s.label)}</button>`).join("");
   const s = SHEETS.find(x=>x.id===curSheet);
@@ -256,7 +262,7 @@ D.units.forEach((u,ui)=>{
 });
 $("grid").innerHTML = html;
 $("legend").innerHTML = [["MATCHED","var(--ok-soft)"],["RATE","var(--info)"],["UNPOSTED","var(--warn)"],["NO_ACTIVITY","var(--bad)"],["UNVERIFIED","repeating-linear-gradient(45deg,var(--line) 0 3px,var(--empty) 3px 6px)"],["IDLE_NO_USAGE","transparent;box-shadow:inset 0 0 0 1px var(--line)"]]
-  .map(([k,c])=>`<span><i style="background:${c}"></i>${k==="RATE"?"Auto-fixed (rate, duplicate)":k==="UNPOSTED"?"Fix after approval (unposted, wrong job, actual hours)":k==="NO_ACTIVITY"?"Held for review":STATUS[k].label}</span>`).join("");
+  .map(([k,c])=>`<span><i style="background:${c}"></i>${k==="RATE"?"Auto-fixed (rate, duplicate, failed export)":k==="UNPOSTED"?"Fix after approval (unposted, wrong job, actual hours)":k==="NO_ACTIVITY"?"Held for review":STATUS[k].label}</span>`).join("");
 
 let pos = ND-1, selU = null, selD = null, timer = null;
 function statsAt(di){
@@ -294,6 +300,7 @@ function renderDetail(){
   if(selD>pos){ h += `<p class="empty">The reconciliation hasn't reached this day yet.</p>`; $("detail").innerHTML=h; return; }
   h += c.tel ? `<dl class="kv"><dt>Telematics</dt><dd>${c.tel.hours.toFixed(1)} engine hrs · idle ${c.tel.idle}%</dd><dt>Location</dt><dd>${esc(c.tel.geofence)}${c.tel.job?` → job ${esc(c.tel.job)}`:" (not a job)"}</dd><dt>Hour meter</dt><dd>${c.tel.meter[0].toFixed(1)} → ${c.tel.meter[1].toFixed(1)}</dd></dl>`
              : `<p class="empty">No telematics device on this unit.</p>`;
+  if(c.hj) h += `<h3 style="font-size:.9rem">HeavyJob (field)</h3><p class="empty">Timecard <span class="mono">${esc(c.hj.tc)}</span> · ${esc(c.hj.foreman)} · job <span class="mono">${esc(c.hj.job)}</span> · ${c.hj.labor.toFixed(1)} labor hrs · ${c.hj.has_eq?c.hj.equip.toFixed(1)+" equipment hrs":"no equipment entered"} · <span class="pill ${/failed/.test(c.hj.status)?'p-bad':'p-ok'}">${esc(c.hj.status)}</span></p>`;
   h += `<h3 style="font-size:.9rem">Usage posted by payroll</h3>` + (c.lines.length ? table([{h:"Timecard",k:"tc",html:r=>`<span class="mono">${esc(r.tc)}</span><div class="why">${esc(r.employee)} · ${esc(r.pr_batch)} · ${r.labor.toFixed(1)} labor hrs</div>`},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Equip hrs",k:"hours",num:true,html:r=>r.hours.toFixed(1)},{h:"Rate",k:"rate",num:true,html:r=>fmt(r.rate)},{h:"Amount",k:"amount",num:true,html:r=>fmt(r.amount)}], c.lines)
     : c.blank ? `<p class="empty">Operator <span class="mono">${esc(c.blank.employee)}</span> is on timecard <span class="mono">${esc(c.blank.tc)}</span> (${esc(c.blank.pr_batch)}) for job <span class="mono">${esc(c.blank.job)}</span>, ${c.blank.labor.toFixed(1)} labor hrs, with the equipment column blank.</p>`
     : `<p class="empty">Nothing on a timecard for this machine.</p>`);
@@ -320,6 +327,7 @@ const C = S.corrections_by_category;
 const moved = D.findings.filter(f=>f.category==="WRONG_JOB").reduce((a,f)=>a+f.corrections.filter(x=>x.amount>0).reduce((b,x)=>b+x.amount,0),0);
 const steps = [
   ["Usage posted by payroll", S.posted_usage_total, null, `${S.posted_usage_lines} lines`],
+  ["Post HeavyJob time that never reached payroll", C.NOT_TRANSFERRED.net, true, `${C.NOT_TRANSFERRED.count} unit-days on ${S.heavyjob.failed_timecards.join(", ")}`],
   ["Add usage telematics found, not posted", C.UNPOSTED.net, true, `${C.UNPOSTED.count} unit-days`],
   ["Correct to actual hours used", C.HOURS_VARIANCE.net, true, `${C.HOURS_VARIANCE.count} unit-days where shift hours were keyed`],
   ["Move usage to the job the machine was on", C.WRONG_JOB.net, true, `${C.WRONG_JOB.count} unit-days · ${fmt(moved)} moved`],
@@ -339,6 +347,7 @@ $("je").innerHTML = table([{h:"Co",k:"co"},{h:"Account",k:"acct",html:r=>`<span 
 const ck = S.tie_out_checks, allOk = Object.values(ck).every(Boolean);
 $("checks").innerHTML = Object.entries(ck).map(([k,v])=>`<li><span class="pill ${v?'p-ok':'p-bad'}">${v?"PASS":"FAIL"}</span>${esc(k.charAt(0).toUpperCase()+k.slice(1))}</li>`).join("");
 $("tie-pill").innerHTML = `<span class="pill ${allOk?'p-ok':'p-bad'}">${Object.values(ck).filter(Boolean).length} of ${Object.keys(ck).length} pass</span>`;
+$("missing").innerHTML = table([{h:"Employee",k:"employee",html:r=>`<span class="mono">${esc(r.employee)}</span>`},{h:"Date",k:"date",html:r=>dlabel(r.date)},{h:"HeavyJob timecard",k:"hj_timecard",html:r=>`<span class="mono">${esc(r.hj_timecard)}</span><div class="why">${esc(r.foreman)}</div>`},{h:"Job",k:"job",html:r=>`<span class="mono">${esc(r.job)}</span>`},{h:"Labor hrs",k:"labor_hours",num:true,html:r=>r.labor_hours.toFixed(1)},{h:"Equipment",k:"equipment",html:r=>`<span class="mono">${esc(r.equipment)}</span> · ${r.equip_hours.toFixed(1)} hrs`}], D.missing_payroll);
 $("reclass").innerHTML = table([{h:"Employee",k:"employee",html:r=>`<span class="mono">${esc(r.employee)}</span>`},{h:"Date",k:"date",html:r=>dlabel(r.date)},{h:"Timecard",k:"tc_line",html:r=>`<span class="mono">${esc(r.tc_line)}</span><div class="why">${esc(r.pr_batch)}</div>`},{h:"Hours",k:"labor_hours",num:true,html:r=>r.labor_hours.toFixed(1)},{h:"From job",k:"from_job",html:r=>`<span class="mono">${esc(r.from_job)}</span>`},{h:"To job",k:"to_job",html:r=>`<span class="mono">${esc(r.to_job)}</span>`},{h:"Cross-company",html:r=>r.cross_company==="Y"?'<span class="pill p-warn">Co '+r.from_co+' → Co '+r.to_co+'</span>':'<span class="pill p-mute">No</span>'},{h:"Why",k:"reason"}], D.labor_reclass);
 const IR = D.import_rows, cols = Object.keys(IR[0]);
 $("imp").textContent = [cols.join(","), ...IR.slice(0,14).map(r=>cols.map(k=>r[k]).join(","))].join("\n") + `\n… ${IR.length} lines in all, ${fmt(S.correction_total)} net`;

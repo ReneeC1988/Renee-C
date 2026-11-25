@@ -1,8 +1,8 @@
 employee,date,tc_line,pr_batch,labor_hours,from_job,to_job,from_co,to_co,cross_company,reason
 E1108,2026-10-21,TC-00321,PR2-1023,10.0,26-1131,26-1118,2,2,N,Operated R-305 on 26-1118 per telematics
-E1108,2026-10-22,TC-00344,PR2-1023,8.5,26-1131,26-1118,2,2,N,Operated R-305 on 26-1118 per telematics
-E1108,2026-10-23,TC-00367,PR2-1023,8.0,26-1131,26-1118,2,2,N,Operated R-305 on 26-1118 per telematics
-E1123,2026-10-20,TC-00304,PR2-1023,8.5,26-1112,26-1125,2,2,N,Operated T-602 on 26-1125 per telematics
+E1108,2026-10-22,TC-00344,PR2-1023,9.5,26-1131,26-1118,2,2,N,Operated R-305 on 26-1118 per telematics
+E1108,2026-10-23,TC-00365,PR2-1023,8.0,26-1131,26-1118,2,2,N,Operated R-305 on 26-1118 per telematics
+E1123,2026-10-20,TC-00304,PR2-1023,9.0,26-1112,26-1125,2,2,N,Operated T-602 on 26-1125 per telematics
 E1127,2026-10-01,TC-00023,PR2-1002,10.5,26-1118,26-9010,2,1,Y,Operated T-606 on 26-9010 per telematics
 E1127,2026-10-02,TC-00048,PR2-1002,9.0,26-1118,26-9010,2,1,Y,Operated T-606 on 26-9010 per telematics
 E1120,2026-10-14,TC-00217,PR2-1016,9.5,26-1125,26-1112,2,2,N,Operated X-551 on 26-1112 per telematics

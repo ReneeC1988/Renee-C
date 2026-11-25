@@ -19,13 +19,25 @@ One row per unit per day, pulled nightly from the telematics provider. Most OEM 
 
 **[GUESS]** A unit that works two jobs in one day is assigned to the geofence with the most hours. Production should split by geofence time.
 
-### Payroll timecards (`data/pr_timecards_oct2026.csv`)
+### HeavyJob field timecards (`data/heavyjob_timecards_oct2026.csv`)
 
-One line per operator per day, as entered in payroll timecard entry. The equipment columns are what the payroll ledger update posts to EM usage.
+Where hours are born. One timecard per foreman per job per day, one row per operator, as exported from HeavyJob (HCSS).
 
 | Field | Meaning |
 |---|---|
-| tc_line | Timecard line ID (every EM usage line traces back to one) |
+| hj_row, hj_timecard | Row and timecard IDs (illustrative format) |
+| date, foreman, job, cost_code | Work date, foreman, job and HeavyJob cost code (maps to the ERP phase) |
+| employee, labor_hours | Operator and hours worked |
+| equipment, equip_hours | Machine and hours used; blank = no equipment entered in the field |
+| status | Approved - exported to payroll, or Approved - export failed |
+
+### Payroll timecards (`data/pr_timecards_oct2026.csv`)
+
+One line per operator per day, imported from approved HeavyJob timecards. The equipment columns are what the payroll ledger update posts to EM usage.
+
+| Field | Meaning |
+|---|---|
+| tc_line, hj_row | ERP timecard line ID and the HeavyJob row it was imported from |
 | pr_co, pr_batch, pr_end_date | Payroll company (the company that owns the job [GUESS]), weekly batch, period ending Friday |
 | employee, date, job, phase | Operator, work date, job and phase for the labor |
 | labor_hours | Operator's hours (shift) |
@@ -75,3 +87,7 @@ Uploaded through the ERP's Import Manager into an **EM usage posting batch**, on
 ## Output: labor reclass for payroll (`output/labor_reclass_for_payroll_oct2026.csv`)
 
 Operator hours that payroll charged to the crew's job while the machine (and operator) worked another. Booked as a JC labor cost transfer; gross pay doesn't change. `cross_company = Y` lines also need the intercompany labor entry.
+
+## Output: missing from payroll (`output/missing_from_payroll_oct2026.csv`)
+
+Rows approved in HeavyJob that never reached ERP payroll. The operator is owed the labor hours on the next payroll; the equipment hours are posted through the correction batch.

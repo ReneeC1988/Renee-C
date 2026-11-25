@@ -15,7 +15,7 @@ I'm a Financial Controller (MBA, MSE, CPA Candidate) for a dual-entity construct
 | Project | What it shows | Tools |
 |---|---|---|
 | [AP automation: tickets to ERP](ap-automation/) | Third-party scale tickets matched to vendor invoices, AP Entry import file, and an API integration that builds and posts an AP batch with segregation of duties and tie-outs | Python, REST APIs, ERP Import Manager, CSV |
-| [Equipment usage reconciliation](equipment-usage-recon/) | Payroll-posted equipment usage checked against telematics unit by unit, day by day; actual-hours corrections, approval routing, an EM usage correction batch, a labor reclass for payroll and a two-way intercompany tie-out | Python, telematics data, ERP Import Manager, CSV |
+| [Equipment usage reconciliation](equipment-usage-recon/) | HeavyJob field time tied to payroll, and payroll-posted equipment usage checked against telematics unit by unit, day by day; actual-hours corrections, approval routing, an EM usage correction batch, a labor reclass for payroll and a two-way intercompany tie-out | Python, HeavyJob, telematics data, ERP Import Manager, CSV |
 
 More projects coming soon.
 

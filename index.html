@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Renee C. · Finance & ERP Automation</title>
+<meta name="description" content="Portfolio of accounting automation projects: AP, ERP imports, API integrations and reconciliations. All data fictional.">
+<meta property="og:title" content="Renee C. · Finance & ERP Automation Portfolio">
+<meta property="og:description" content="AP automation, ERP imports and API integrations for a construction materials business, shown with fictional data and working demos.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#eceae4;--panel:#f8f7f3;--ink:#1d1f1c;--muted:#5f625b;--line:#cfccc2;--amber:#c97a00;--asphalt:#2a2c29;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;--body:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#161816;--panel:#1f221f;--ink:#e8e6df;--muted:#a3a59c;--line:#353933;--amber:#f0a32a;--asphalt:#e8e6df;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body)}
+.wrap{max-width:920px;margin:0 auto;padding:48px max(16px,env(safe-area-inset-right)) 64px max(16px,env(safe-area-inset-left));display:grid;gap:40px}
+.eyebrow{font:500 .75rem var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--amber)}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.05;text-wrap:balance}
+h1{font-size:clamp(2.2rem,6vw,3.4rem)} h2{font-size:1.6rem} h3{font-size:1.45rem}
+p{margin:0;max-width:65ch}
+.muted{color:var(--muted)}
+header,section{display:grid;gap:12px}
+.skills{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0}
+.skills li{font:500 .8rem var(--mono);border:1px solid var(--line);border-radius:999px;padding:4px 10px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:22px;display:grid;gap:12px}
+.card ul{margin:0;padding-left:1.1rem;display:grid;gap:4px}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:600 .9rem var(--body);text-decoration:none;border-radius:4px;padding:9px 14px;border:1px solid var(--asphalt);color:var(--bg);background:var(--asphalt)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.note{font-size:.85rem;color:var(--muted);border-left:3px solid var(--amber);padding-left:10px}
+.soon{border-style:dashed;background:transparent}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <span class="eyebrow">Portfolio</span>
+  <h1>Finance & ERP Automation</h1>
+  <p>I automate accounting work in construction and materials: accounts payable, ERP imports, API integrations and month-end reconciliations. Each project below has a write-up, sample data and code you can run.</p>
+  <ul class="skills">
+    <li>Accounts payable</li><li>ERP imports</li><li>REST APIs</li><li>Python</li><li>Reconciliations</li><li>Internal controls</li>
+  </ul>
+  <p class="note">Every company, vendor and figure in these projects is fictional. They are modeled on real kinds of work, with invented data and mock systems.</p>
+</header>
+
+<section>
+  <h2>Projects</h2>
+  <article class="card">
+    <span class="eyebrow">AP automation · API integration</span>
+    <h3>Scale tickets to ERP, without keying</h3>
+    <p>A materials company receives about 400 third-party scale tickets and 25 vendor invoices a month. I built a pipeline that matches every invoice line to its ticket, holds exceptions, writes the ERP import file, and pushes approved invoices through an API into an AP batch that a person reviews and posts.</p>
+    <ul>
+      <li>22 of 25 invoices imported automatically; 3 held with reasons (unknown ticket, extra tons, duplicate)</li>
+      <li>A supplier's 7% price increase flagged for buyer approval</li>
+      <li>Segregation of duties: the integration cannot post, a supervisor does</li>
+      <li>The ERP batch ties to the approved total to the cent</li>
+    </ul>
+    <div class="links">
+      <a class="btn" href="ap-automation/site/">See the live demo</a>
+      <a class="btn ghost" href="https://github.com/ReneeC1988/Renee-C/tree/main/ap-automation">Read the case study</a>
+    </div>
+  </article>
+  <article class="card soon">
+    <span class="eyebrow">Coming next</span>
+    <p class="muted">Month-end accrual reconciliation and equipment cost imports.</p>
+  </article>
+</section>
+</div>
+</body>
+</html>
